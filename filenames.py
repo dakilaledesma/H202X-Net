@@ -22,12 +22,8 @@ for image_fn in image_fp:
         class_label = int(classification[str(int(basename))])
     labels.append(class_label)
 
+image_fp = np.array(image_fp)
+np.save("data/image_fps.npy", image_fp)
 
-slabels = set(labels)
-print(len(slabels))
-
-# image_fp = np.array(image_fp)
-# np.save("data/image_fps.npy", image_fp)
-
-# labels = np.array(labels)
-# np.save("data/labels.npy", labels)
+labels = np.array(labels)
+np.save("data/labels.npy", labels)
