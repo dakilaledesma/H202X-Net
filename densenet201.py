@@ -1,9 +1,8 @@
-import numpy as np
-from PIL import Image
-from tensorflow.keras.applications.nasnet import NASNetLarge
+from tensorflow.keras.applications.densenet import DenseNet201
 from tensorflow.keras.preprocessing import image
-from tensorflow.keras.applications.nasnet import preprocess_input, decode_predictions
+from tensorflow.keras.applications.nasnet import preprocess_input
 from tensorflow.keras.utils import to_categorical
+from sklearn.utils import shuffle
 import tensorflow as tf
 import numpy as np
 
@@ -35,12 +34,14 @@ class Custom_Generator(tf.keras.utils.Sequence):
 batch_size = 8
 image_fp = np.load("data/image_fps.npy")
 labels = np.load("data/labels.npy")
-labels = to_categorical(labels, dtype='uint8')
+labels = to_categorical(labels, dtype=np.bool)
+
+image_fp, labels = shuffle(image_fp, labels)
 train_gen = Custom_Generator(image_fp, labels, batch_size)
 
-model = NASNetLarge(weights=None, include_top=True, input_shape=(331, 331, 3), classes=32094)
+model = DenseNet201(weights=None, include_top=True, input_shape=(331, 331, 3), classes=32094)
 model.compile(optimizer="adam", loss="categorical_crossentropy")
 model.fit_generator(generator=train_gen,
-                    steps_per_epoch=int(3800 // batch_size),
+                    steps_per_epoch=int(image_fp.shape[0] // batch_size),
                     epochs=10,
                     verbose=1)
