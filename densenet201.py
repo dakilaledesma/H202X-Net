@@ -45,4 +45,4 @@ model.fit_generator(generator=train_gen,
                     steps_per_epoch=int(image_fp.shape[0] // batch_size),
                     epochs=10,
                     verbose=1)
-model.save("data/densenet201-1")
+model.save("models/densenet201-1")
