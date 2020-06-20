@@ -32,17 +32,17 @@ class Custom_Generator(tf.keras.utils.Sequence):
 
 
 batch_size = 8
-image_fp = np.load("data/image_fps.npy")
-labels = np.load("data/labels.npy")
+image_fp = np.load("data/image_fps_5ka.npy")
+labels = np.load("data/labels_5ka.npy")
 labels = to_categorical(labels, dtype=np.bool)
 
 image_fp, labels = shuffle(image_fp, labels)
 train_gen = Custom_Generator(image_fp, labels, batch_size)
 
-model = NASNetLarge(weights=None, include_top=True, input_shape=(331, 331, 3), classes=32094)
+model = NASNetLarge(weights=None, include_top=True, input_shape=(331, 331, 3), classes=5000)
 model.compile(optimizer="adam", loss="categorical_crossentropy")
 model.fit_generator(generator=train_gen,
                     steps_per_epoch=int(image_fp.shape[0] // batch_size),
-                    epochs=10,
+                    epochs=1,
                     verbose=1)
-model.save("models/nasnetl-1")
+model.save("models\\nasnetl-1")

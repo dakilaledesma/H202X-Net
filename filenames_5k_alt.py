@@ -11,20 +11,27 @@ train_metadata = open("data/nybg2020/train/metadata.json", 'r').read()
 train_metadata = json.loads(train_metadata)
 
 classification = {}
+num_samples_per_cat = {}
 for sample in train_metadata["annotations"]:
     classification[str(sample['id'])] = sample['category_id']
 
 labels = []
+images = []
 for image_fn in image_fp:
     basename = os.path.basename(str(image_fn)).replace(".jpg", "")
     try:
         class_label = classification[basename]
     except KeyError:
         class_label = int(classification[str(int(basename))])
-    labels.append(class_label)
 
-image_fp = np.array(image_fp)
-np.save("data/image_fps.npy", image_fp)
+    if int(class_label) < 5000:
+        images.append(image_fn)
+        labels.append(class_label)
+
+print(len(images))
+
+images = np.array(images)
+np.save("data/image_fps_5ka.npy", images)
 
 labels = np.array(labels)
-np.save("data/labels.npy", labels)
+np.save("data/labels_5ka.npy", labels)
