@@ -50,7 +50,7 @@ import os
 #                     verbose=1)
 # model.save("models\\efficientnetb3-1-full")
 
-model = load_model("models\\efficientnetb3-1-full")
+model = load_model("models\\efficientnetb3-1-15-full")
 image_fp = list(Path("data/nybg2020/test/images/").rglob("*.jpg"))
 
 csv_string = "Id,Predicted\n"
@@ -82,7 +82,7 @@ csv_str_list.sort()
 csv_preds = "\n".join(csv_str_list)
 csv_string += csv_preds
 
-output = open("outputs/eb3-1.txt", 'w')
+output = open("outputs/eb3-1-15.txt", 'w')
 output.write(csv_string)
 output.close()
 
