@@ -39,7 +39,7 @@ class Custom_Generator(keras.utils.Sequence):
         return return_x, np.array(batch_y)
 
 
-batch_size = 512
+batch_size = 64
 image_fp = np.load("data/image_fps.npy")
 labels = np.load("data/labels.npy")
 labels = to_categorical(labels, dtype=np.bool)
@@ -51,7 +51,7 @@ steps = int(image_fp.shape[0] // batch_size)
 model = efn.EfficientNetB3(weights=None, include_top=True, input_shape=(320, 320, 3), classes=32094)
 model.compile(optimizer=Optimizer(Adam(), steps=steps), loss="categorical_crossentropy")
 model.fit_generator(generator=train_gen,
-                    steps_per_epoch=1,
+                    steps_per_epoch=steps,
                     epochs=75,
                     verbose=1)
 model.save(f"models\\efficientnetb3-2-full")
