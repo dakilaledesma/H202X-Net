@@ -18,6 +18,7 @@ import keras.backend as K
 from keras.legacy import interfaces
 from keras.optimizers import Optimizer
 
+
 class AdamAccumulate(Optimizer):
     def __init__(self, lr=0.001, beta_1=0.9, beta_2=0.999,
                  epsilon=None, decay=0., amsgrad=False, accum_iters=1, **kwargs):
@@ -110,7 +111,7 @@ class AdamAccumulate(Optimizer):
         return dict(list(base_config.items()) + list(config.items()))
 
 
-model = load_model("models\\densenet201-2", custom_objects={'AdamAccumulate': AdamAccumulate})
+model = load_model("models\\densenet201-2", custom_objects={'AdamAccumulate': AdamAccumulate}, compile=False)
 image_fp = list(Path("data/nybg2020/test/images/").rglob("*.jpg"))
 
 csv_string = "Id,Predicted\n"
@@ -126,9 +127,9 @@ for split in tqdm(split_imgs):
     fnames = []
 
     for file_name in split:
-        img = image.load_img(file_name, target_size=(340, 500))
+        img = image.load_img(file_name, target_size=(224, 327))
         x = image.img_to_array(img)
-        x = efn.preprocess_input(x)
+        x = preprocess_input(x)
         imgs.append(x)
         fnames.append(os.path.basename(str(file_name)).replace(".jpg", ''))
 

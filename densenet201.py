@@ -1,6 +1,6 @@
 from keras.applications.densenet import DenseNet201
 from keras.preprocessing import image
-from keras.applications.nasnet import preprocess_input
+from keras.applications.densenet import preprocess_input
 from keras.utils import to_categorical
 from sklearn.utils import shuffle
 import tensorflow as tf
@@ -31,7 +31,7 @@ class Custom_Generator(keras.utils.Sequence):
 
         return_x = []
         for file_name in batch_x:
-            img = image.load_img(file_name, target_size=(224, round(224 * 1.46)))
+            img = image.load_img(file_name, target_size=(340, 500))
             x = image.img_to_array(img)
             x = preprocess_input(x)
             return_x.append(x)
@@ -142,11 +142,19 @@ train_gen = Custom_Generator(image_fp, labels, batch_size)
 
 acc_opt = AdamAccumulate(lr=0.001, decay=1e-5, accum_iters=64)
 
+model_checkpoint_callback = keras.callbacks.ModelCheckpoint(
+    filepath="cp/densenet201-2",
+    save_weights_only=False,
+    monitor='loss',
+    mode='min',
+    save_best_only=True)
+
 steps = int(image_fp.shape[0] // batch_size)
-model = DenseNet201(weights=None, include_top=True, input_shape=(224, round(224 * 1.46), 3), classes=32094)
+model = DenseNet201(weights=None, include_top=True, input_shape=(340, 500, 3), classes=32094)
 model.compile(optimizer=acc_opt, loss="categorical_crossentropy")
 model.fit_generator(generator=train_gen,
                     steps_per_epoch=int(image_fp.shape[0] // batch_size),
-                    epochs=10,
-                    verbose=1)
+                    epochs=3,
+                    verbose=1,
+                    callbacks=[model_checkpoint_callback])
 model.save("models\\densenet201-2")

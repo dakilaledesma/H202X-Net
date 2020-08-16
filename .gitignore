@@ -30,6 +30,7 @@ data/
 .idea/
 .vscode/
 models/
+cp/
 
 # PyInstaller
 #  Usually these files are written by a python script from a template
