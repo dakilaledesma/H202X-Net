@@ -132,7 +132,7 @@ class AdamAccumulate(Optimizer):
         return dict(list(base_config.items()) + list(config.items()))
 
 
-batch_size = 8
+batch_size = 2
 image_fp = np.load("data/image_fps.npy")
 labels = np.load("data/labels.npy")
 labels = to_categorical(labels, dtype=np.bool)
@@ -140,7 +140,7 @@ labels = to_categorical(labels, dtype=np.bool)
 image_fp, labels = shuffle(image_fp, labels)
 train_gen = Custom_Generator(image_fp, labels, batch_size)
 
-acc_opt = AdamAccumulate(lr=0.001, decay=1e-5, accum_iters=64)
+acc_opt = AdamAccumulate(lr=0.001, decay=1e-5, accum_iters=128)
 
 model_checkpoint_callback = keras.callbacks.ModelCheckpoint(
     filepath="cp/densenet121-1",

@@ -133,7 +133,7 @@ class AdamAccumulate(Optimizer):
         return dict(list(base_config.items()) + list(config.items()))
 
 
-batch_size = 3
+batch_size = 2
 image_fp = np.load("data/image_fps.npy")
 labels = np.load("data/labels.npy")
 labels = to_categorical(labels, dtype=np.bool)
@@ -152,6 +152,9 @@ model_checkpoint_callback = keras.callbacks.ModelCheckpoint(
 
 steps = int(image_fp.shape[0] // batch_size)
 model = SEResNeXt50(weights=None, include_top=True, input_shape=(340, 500, 3), classes=32094)
+x = keras.layers.Dense(512)(model.output)
+output = keras.layers.Dense(32094, activation='softmax')(x)
+model = keras.models.Model(inputs=[model.input], outputs=[output])
 model.compile(optimizer=acc_opt, loss="categorical_crossentropy")
 model.fit_generator(generator=train_gen,
                     steps_per_epoch=int(image_fp.shape[0] // batch_size),
