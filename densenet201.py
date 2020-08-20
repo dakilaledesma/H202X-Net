@@ -154,7 +154,7 @@ model = DenseNet201(weights=None, include_top=True, input_shape=(340, 500, 3), c
 model.compile(optimizer=acc_opt, loss="categorical_crossentropy")
 model.fit_generator(generator=train_gen,
                     steps_per_epoch=int(image_fp.shape[0] // batch_size),
-                    epochs=3,
+                    epochs=10,
                     verbose=1,
                     callbacks=[model_checkpoint_callback])
 model.save("models\\densenet201-2")
