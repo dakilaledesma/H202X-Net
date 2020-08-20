@@ -5,6 +5,7 @@ from sklearn.utils import shuffle
 import tensorflow as tf
 import numpy as np
 from typing import List, Optional, Dict, Generator, NamedTuple, Any, Tuple, Union, Mapping
+import itertools
 
 import tensorflow.keras.backend as K
 from classification_models.keras import Classifiers
@@ -18,33 +19,6 @@ for d in devices:
 
 # Getting model
 SEResNeXt50, preprocess_input = Classifiers.get('seresnext50')
-
-
-# Generator
-class Custom_Generator(tf.keras.utils.Sequence):
-    def __init__(self, image_filenames, labels, batch_size):
-        self.image_filenames = image_filenames
-        self.labels = labels
-        self.batch_size = batch_size
-
-    def __len__(self):
-        return (np.ceil(len(self.image_filenames) / float(self.batch_size))).astype(np.int)
-
-    def __getitem__(self, idx):
-        batch_x = self.image_filenames[idx * self.batch_size: (idx + 1) * self.batch_size]
-        batch_y = self.labels[idx * self.batch_size: (idx + 1) * self.batch_size]
-
-        return_x = []
-        for file_name in batch_x:
-            img = image.load_img(file_name, target_size=(340, 500))
-            x = image.img_to_array(img)
-            x = preprocess_input(x)
-            return_x.append(x)
-        return_x = np.array(return_x)
-
-        return return_x, np.array(batch_y)
-
-
 
 # Config class
 class Config:
@@ -147,6 +121,7 @@ def train_epoch(config: Config,
     for i, batch in enumerate(dataset):
         dummy_step = i + start_step * config.num_grad_accumulates
         x_train, y_train = batch
+        print(x_train.shape, y_train.shape)
         step_gradients = train_step(x_train, y_train, loss_fn, optimizer)
         gradients = accumulated_gradients(gradients, step_gradients, config.num_grad_accumulates)
         if (dummy_step + 1) % config.num_grad_accumulates == 0:
@@ -190,10 +165,53 @@ image_fp = np.load("data/image_fps.npy")
 labels = np.load("data/labels.npy")
 labels = to_categorical(labels, dtype=np.bool)
 
-image_fp, labels = shuffle(image_fp, labels)
-train_gen = Custom_Generator(image_fp, labels, batch_size)
-dataset = tf.data.Dataset.from_generator(train_gen, (tf.int64, tf.int64), (tf.TensorShape([]), tf.TensorShape([None])))
 
+# Generator
+# def train_gen():
+#     for idx in itertools.count(1):
+#         batch_x = image_fp[idx]
+#         batch_y = labels[idx]
+#
+#         print(batch_x, batch_y)
+#
+#         return_x = []
+#         for file_name in batch_x:
+#             img = image.load_img(file_name, target_size=(340, 500))
+#             x = image.img_to_array(img)
+#             x = preprocess_input(x)
+#             return_x.append(x)
+#         return_x = np.array(return_x)
+#
+#         return return_x, np.array(batch_y)
+
+
+image_fp, labels = shuffle(image_fp, labels)
+# dataset = tf.data.Dataset.from_generator(train_gen, (tf.float64, tf.int64), (tf.TensorShape([340, 500, 3]), tf.TensorShape([32094])))
+
+"""
+https://stackoverflow.com/questions/37340129/tensorflow-training-on-my-own-image
+"""
+dataset = tf.data.Dataset.from_tensor_slices((image_fp, labels))
+print(image_fp[0])
+
+
+def im_file_to_tensor(file, label):
+    def _im_file_to_tensor(f, la):
+        im = image.load_img(f, target_size=(340, 500))
+        im = image.img_to_array(im)
+        im = preprocess_input(im)
+        return im, la
+
+    file, label = tf.py_function(_im_file_to_tensor,
+                                 inp=(file, label),
+                                 Tout=(tf.float32, tf.uint8))
+    file.set_shape([340, 500, 3])
+    label.set_shape([32094])
+
+    print(file.shape, label.shape)
+    return (file, label)
+
+dataset.map(im_file_to_tensor)
 train(config, dataset, model)
 
 # batch_size = 2
