@@ -186,12 +186,10 @@ labels = to_categorical(labels, dtype=np.bool)
 
 
 image_fp, labels = shuffle(image_fp, labels)
-# dataset = tf.data.Dataset.from_generator(train_gen, (tf.float64, tf.int64), (tf.TensorShape([340, 500, 3]), tf.TensorShape([32094])))
-
 """
 https://stackoverflow.com/questions/37340129/tensorflow-training-on-my-own-image
 """
-dataset = tf.data.Dataset.from_tensor_slices((image_fp, labels))
+gen_dataset = tf.data.Dataset.from_tensor_slices((image_fp, labels))
 print(image_fp[0])
 
 
@@ -209,10 +207,10 @@ def im_file_to_tensor(file, label):
     label.set_shape([32094])
 
     print(file.shape, label.shape)
-    return (file, label)
+    return file, label
 
-dataset.map(im_file_to_tensor)
-train(config, dataset, model)
+gen_dataset.map(im_file_to_tensor)
+train(config, gen_dataset, model)
 
 # batch_size = 2
 # image_fp = np.load("data/image_fps.npy")
