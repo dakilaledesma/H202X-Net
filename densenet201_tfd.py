@@ -1,22 +1,45 @@
-from keras.preprocessing import image
-from keras.models import load_model
-from keras.optimizers import Optimizer
-
-from pathlib import Path
-from tqdm import tqdm
-import numpy as np
-import os
-
 from keras.applications.densenet import DenseNet201
 from keras.preprocessing import image
-from keras.applications.nasnet import preprocess_input
+from keras.applications.densenet import preprocess_input
 from keras.utils import to_categorical
 from sklearn.utils import shuffle
 import tensorflow as tf
+import numpy as np
+
+# from runai.ga.keras.optimizers import Optimizer
+# from keras.models import load_model
+# from keras.optimizers import Adam
+
 import keras
 import keras.backend as K
 from keras.legacy import interfaces
 from keras.optimizers import Optimizer
+from ml_libs.cosine_annealing import CosineAnnealingScheduler
+
+
+class Custom_Generator(keras.utils.Sequence):
+    def __init__(self, image_filenames, labels, batch_size):
+        self.image_filenames = image_filenames
+        self.labels = labels
+        self.batch_size = batch_size
+
+    def __len__(self):
+        return (np.ceil(len(self.image_filenames) / float(self.batch_size))).astype(np.int)
+
+    def __getitem__(self, idx):
+        batch_x = self.image_filenames[idx * self.batch_size: (idx + 1) * self.batch_size]
+        batch_y = self.labels[idx * self.batch_size: (idx + 1) * self.batch_size]
+
+        return_x = []
+        for file_name in batch_x:
+            img = image.load_img(file_name, target_size=(224, 327))
+            x = image.img_to_array(img)
+            x = preprocess_input(x)
+            return_x.append(x)
+        return_x = np.array(return_x)
+
+        return return_x, np.array(batch_y)
+
 
 class AdamAccumulate(Optimizer):
     def __init__(self, lr=0.001, beta_1=0.9, beta_2=0.999,
@@ -109,50 +132,58 @@ class AdamAccumulate(Optimizer):
         base_config = super(AdamAccumulate, self).get_config()
         return dict(list(base_config.items()) + list(config.items()))
 
+batch_size = 4
+image_fp = np.load("data/image_fps.npy")
+labels = np.load("data/labels.npy")
+labels = to_categorical(labels, dtype=np.bool)
 
-model = load_model("models\\densenet201-2", custom_objects={'AdamAccumulate': AdamAccumulate})
-image_fp = list(Path("data/nybg2020/test/images/").rglob("*.jpg"))
+image_fp, labels = shuffle(image_fp, labels)
+train_gen = Custom_Generator(image_fp, labels, batch_size)
 
-csv_string = "Id,Predicted\n"
-
-imgs = []
-
-image_fp.sort()
-split_imgs = np.array(np.array_split(image_fp, 3200))
-
-csv_str_list = []
-for split in tqdm(split_imgs):
-    imgs = []
-    fnames = []
-
-    for file_name in split:
-        img = image.load_img(file_name, target_size=(340, 500))
-        x = image.img_to_array(img)
-        x = efn.preprocess_input(x)
-        imgs.append(x)
-        fnames.append(os.path.basename(str(file_name)).replace(".jpg", ''))
-
-    imgs = np.array(imgs)
-    preds = model.predict(imgs)
-
-    for a, b in zip(fnames, preds):
-        csv_str_list.append(f"{a},{np.argmax(b)}")
-
-csv_str_list.sort()
-csv_preds = "\n".join(csv_str_list)
-csv_string += csv_preds
-
-output = open("outputs/densenet201-2-ga.txt", 'w')
-output.write(csv_string)
-output.close()
-
-# for file_name in tqdm(image_fp):
-#     img = image.load_img(file_name, target_size=(320, 320))
-#     x = image.img_to_array(img)
-#     x = efn.preprocess_input(x)
-#     imgs.append(x)
-
-# print(model.predict(imgs))
+image_fp, labels = shuffle(image_fp, labels)
+"""
+https://stackoverflow.com/questions/37340129/tensorflow-training-on-my-own-image
+"""
+gen_dataset = tf.data.Dataset.from_tensor_slices((image_fp, labels))
+print(image_fp[0])
 
 
+def im_file_to_tensor(file, label):
+    def _im_file_to_tensor(f, la):
+        im = image.load_img(f, target_size=(224, 327))
+        im = image.img_to_array(im)
+        im = preprocess_input(im)
+        return im, la
 
+    file, label = tf.py_function(_im_file_to_tensor,
+                                 inp=(file, label),
+                                 Tout=(tf.float32, tf.uint8))
+    file.set_shape([224, 327, 3])
+    label.set_shape([32094])
+
+    print(file.shape, label.shape)
+    return file, label
+
+
+gen_dataset.batch(batch_size).repeat()
+gen_dataset.map(im_file_to_tensor)
+
+acc_opt = AdamAccumulate(lr=0.001, decay=1e-5, accum_iters=64)
+
+model_checkpoint_callback = keras.callbacks.ModelCheckpoint(
+    filepath="cp/densenet201-3",
+    save_weights_only=False,
+    monitor='loss',
+    mode='min',
+    save_best_only=True)
+
+steps = int(image_fp.shape[0] // batch_size)
+model = DenseNet201(weights=None, include_top=True, input_shape=(224, 327, 3), classes=32094)
+model.compile(optimizer=acc_opt, loss="categorical_crossentropy")
+model.fit(gen_dataset.make_one_shot_iterator(),
+                    steps_per_epoch=int(image_fp.shape[0] // batch_size),
+                    epochs=10,
+                    verbose=1,
+                    callbacks=[model_checkpoint_callback,
+                               CosineAnnealingScheduler(T_max=100, eta_max=1e-2, eta_min=1e-4)])
+model.save("models\\densenet201-3")
