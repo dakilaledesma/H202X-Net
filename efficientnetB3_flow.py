@@ -1,5 +1,10 @@
+import efficientnet.keras as efn
 from keras.preprocessing import image
-
+# from tensorflow.keras.applications.nasnet import preprocess_input
+from keras.utils import to_categorical
+from keras.preprocessing import image
+from keras.layers import Dense, GlobalAveragePooling2D
+from keras.models import Model
 from keras.utils import to_categorical
 from sklearn.utils import shuffle
 import tensorflow as tf
@@ -13,33 +18,8 @@ import keras
 import keras.backend as K
 from keras.legacy import interfaces
 from keras.optimizers import Optimizer
-from classification_models import Classifiers
-
-SEResNeXt50, preprocess_input = Classifiers.get('seresnext50')
-
-class Custom_Generator(keras.utils.Sequence):
-    def __init__(self, image_filenames, labels, batch_size):
-        self.image_filenames = image_filenames
-        self.labels = labels
-        self.batch_size = batch_size
-
-    def __len__(self):
-        return (np.ceil(len(self.image_filenames) / float(self.batch_size))).astype(np.int)
-
-    def __getitem__(self, idx):
-        batch_x = self.image_filenames[idx * self.batch_size: (idx + 1) * self.batch_size]
-        batch_y = self.labels[idx * self.batch_size: (idx + 1) * self.batch_size]
-
-        return_x = []
-        for file_name in batch_x:
-            img = image.load_img(file_name, target_size=(340, 500))
-            x = image.img_to_array(img)
-            x = preprocess_input(x)
-            return_x.append(x)
-        return_x = np.array(return_x)
-
-        return return_x, np.array(batch_y)
-
+from ml_libs.cosine_annealing import CosineAnnealingScheduler
+import pandas as pd
 
 class AdamAccumulate(Optimizer):
     def __init__(self, lr=0.001, beta_1=0.9, beta_2=0.999,
@@ -133,29 +113,53 @@ class AdamAccumulate(Optimizer):
         return dict(list(base_config.items()) + list(config.items()))
 
 
-batch_size = 3
+batch_size = 4
 image_fp = np.load("data/image_fps.npy")
 labels = np.load("data/labels.npy")
-labels = to_categorical(labels, dtype=np.bool)
+print(min(labels), max(labels))
+labels = np.array(labels, dtype=np.str)
+# labels = to_categorical(labels, dtype=np.int)
+# print(len(labels[0]))
+# image_fp, labels = shuffle(image_fp, labels)
 
-image_fp, labels = shuffle(image_fp, labels)
-train_gen = Custom_Generator(image_fp, labels, batch_size)
+file_df = pd.DataFrame(list(zip(image_fp, labels)), columns=["filename", "class"])
+print(file_df.head())
 
+datagen = image.ImageDataGenerator(preprocessing_function=efn.preprocess_input)
+train_gen = datagen.flow_from_dataframe(file_df, target_size=(320, 320), shuffle=True, class_mode="categorical", batch_size=batch_size)
+# train_gen = Custom_Generator(image_fp, labels, batch_size)
+# print(train_gen.class_indices)
+
+"""
+https://stackoverflow.com/questions/37340129/tensorflow-training-on-my-own-image
+"""
 acc_opt = AdamAccumulate(lr=0.001, decay=1e-5, accum_iters=64)
 
 model_checkpoint_callback = keras.callbacks.ModelCheckpoint(
-    filepath="cp/seresnext50-1",
+    filepath="cp/densenet201-3",
     save_weights_only=False,
     monitor='loss',
     mode='min',
     save_best_only=True)
 
+
+'''
+With bottleneck
+'''
 steps = int(image_fp.shape[0] // batch_size)
-model = SEResNeXt50(weights=None, include_top=True, input_shape=(340, 500, 3), classes=32094)
+en_model = efn.EfficientNetB3(weights=None, include_top=False, input_shape=(224, 327, 3))
+bottleneck = GlobalAveragePooling2D(name='avg_pool')(en_model.output)
+bottleneck = Dense(128, activation='relu')(bottleneck)
+model_output = Dense(32093, activation='softmax', name='fc1000')(bottleneck)
+
+model = Model(inputs=en_model.input, outputs=model_output)
 model.compile(optimizer=acc_opt, loss="categorical_crossentropy")
+model.summary()
 model.fit_generator(generator=train_gen,
                     steps_per_epoch=int(image_fp.shape[0] // batch_size),
                     epochs=10,
                     verbose=1,
-                    callbacks=[model_checkpoint_callback])
-model.save("models\\seresnext50-1")
+                    callbacks=[model_checkpoint_callback,
+                               CosineAnnealingScheduler(T_max=100, eta_max=1e-2, eta_min=1e-4)])
+
+model.save("models\\densenet201-4-bottleneck")
