@@ -136,7 +136,7 @@ https://stackoverflow.com/questions/37340129/tensorflow-training-on-my-own-image
 acc_opt = AdamAccumulate(lr=0.001, decay=1e-5, accum_iters=64)
 
 model_checkpoint_callback = keras.callbacks.ModelCheckpoint(
-    filepath="cp/densenet201-3",
+    filepath="cp/efficientnetb3-4",
     save_weights_only=False,
     monitor='loss',
     mode='min',
@@ -147,9 +147,9 @@ model_checkpoint_callback = keras.callbacks.ModelCheckpoint(
 With bottleneck
 '''
 steps = int(image_fp.shape[0] // batch_size)
-en_model = efn.EfficientNetB3(weights=None, include_top=False, input_shape=(224, 327, 3))
+en_model = efn.EfficientNetB3(weights=None, include_top=False, input_shape=(320, 320, 3))
 bottleneck = GlobalAveragePooling2D(name='avg_pool')(en_model.output)
-bottleneck = Dense(128, activation='relu')(bottleneck)
+bottleneck = Dense(512, activation='relu')(bottleneck)
 model_output = Dense(32093, activation='softmax', name='fc1000')(bottleneck)
 
 model = Model(inputs=en_model.input, outputs=model_output)
@@ -162,4 +162,4 @@ model.fit_generator(generator=train_gen,
                     callbacks=[model_checkpoint_callback,
                                CosineAnnealingScheduler(T_max=100, eta_max=1e-2, eta_min=1e-4)])
 
-model.save("models\\densenet201-4-bottleneck")
+model.save("models\\efficientnetb3-4-bottleneck")
