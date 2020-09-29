@@ -1,23 +1,26 @@
-from keras.applications.densenet import DenseNet201
-from keras.preprocessing import image
-from keras.layers import Dense, GlobalAveragePooling2D
-from keras.models import Model
-from keras.applications.densenet import preprocess_input
-from keras.utils import to_categorical
-from sklearn.utils import shuffle
-import tensorflow as tf
+from keras.models import load_model
+
+
+from pathlib import Path
+from tqdm import tqdm
 import numpy as np
-
-# from runai.ga.keras.optimizers import Optimizer
-# from keras.models import load_model
-# from keras.optimizers import Adam
-
-import keras
+import os
 import keras.backend as K
 from keras.legacy import interfaces
 from keras.optimizers import Optimizer
+
+from classification_models import Classifiers
+from keras.layers import Dense, GlobalAveragePooling2D
+from keras.models import Model
+
 from ml_libs.cosine_annealing import CosineAnnealingScheduler
 import pandas as pd
+from keras.preprocessing import image
+from keras.utils import to_categorical
+from sklearn.utils import shuffle
+import pickle
+
+SEResNeXt50, preprocess_input = Classifiers.get('seresnext50')
 
 class AdamAccumulate(Optimizer):
     def __init__(self, lr=0.001, beta_1=0.9, beta_2=0.999,
@@ -111,56 +114,57 @@ class AdamAccumulate(Optimizer):
         return dict(list(base_config.items()) + list(config.items()))
 
 
-batch_size = 6
-image_fp = np.load("data/image_fps.npy")
-labels = np.load("data/labels.npy")
-print(min(labels), max(labels))
-labels = np.array(labels, dtype=np.str)
-# labels = to_categorical(labels, dtype=np.int)
-# print(len(labels[0]))
-# image_fp, labels = shuffle(image_fp, labels)
-
-file_df = pd.DataFrame(list(zip(image_fp, labels)), columns=["filename", "class"])
-print(file_df.head())
-
-datagen = image.ImageDataGenerator(preprocessing_function=preprocess_input)
-train_gen = datagen.flow_from_dataframe(file_df, target_size=(340, 500), shuffle=True, class_mode="categorical", batch_size=batch_size)
-print(train_gen.classes)
-# train_gen = Custom_Generator(image_fp, labels, batch_size)
-# print(train_gen.class_indices)
-
-"""
-https://stackoverflow.com/questions/37340129/tensorflow-training-on-my-own-image
-"""
+model = load_model("cp/seresnext-4", custom_objects={'AdamAccumulate': AdamAccumulate}, compile=False)
 acc_opt = AdamAccumulate(lr=0.001, decay=1e-5, accum_iters=64)
+model.compile(loss='categorical_crossentropy', optimizer=acc_opt)
+image_fp = list(Path("data/nybg2020/test/images/").rglob("*.jpg"))
 
-model_checkpoint_callback = keras.callbacks.ModelCheckpoint(
-    filepath="cp/densenet201-3",
-    save_weights_only=False,
-    monitor='loss',
-    mode='min',
-    save_best_only=True)
+csv_string = "Id,Predicted\n"
 
-steps = int(image_fp.shape[0] // batch_size)
+imgs = []
 
-'''No bottleneck'''
-# model = DenseNet201(weights=None, include_top=True, input_shape=(340, 500, 3), classes=32093)
+image_fp.sort()
+split_imgs = np.array(np.array_split(image_fp, 3200))
 
-'''With bottleneck'''
-dn_model = DenseNet201(weights=None, include_top=False, input_shape=(340, 500, 3))
-bottleneck = GlobalAveragePooling2D(name='avg_pool')(dn_model.output)
-bottleneck = Dense(512, activation='relu')(bottleneck)
-model_output = Dense(32093, activation='softmax', name='fc1000')(bottleneck)
-model = Model(inputs=dn_model.input, outputs=model_output)
+csv_str_list = []
+
+with open('traingen_classes', 'rb') as classes_file:
+    classes_dictionary = pickle.load(classes_file)
+
+print(classes_dictionary)
+
+for split in tqdm(split_imgs):
+    imgs = []
+    fnames = []
+
+    for file_name in split:
+        img = image.load_img(file_name, target_size=(224, 327))
+        x = image.img_to_array(img)
+        x = preprocess_input(x)
+        imgs.append(x)
+        fnames.append(os.path.basename(str(file_name)).replace(".jpg", ''))
+
+    imgs = np.array(imgs)
+    preds = model.predict(imgs)
+
+    for a, b in zip(fnames, preds):
+        csv_str_list.append(f"{a},{classes_dictionary.get(np.argmax(b))}")
+
+csv_str_list.sort()
+csv_preds = "\n".join(csv_str_list)
+csv_string += csv_preds
+
+output = open("outputs/seresnext-4.txt", 'w')
+output.write(csv_string)
+output.close()
+
+# for file_name in tqdm(image_fp):
+#     img = image.load_img(file_name, target_size=(320, 320))
+#     x = image.img_to_array(img)
+#     x = efn.preprocess_input(x)
+#     imgs.append(x)
+
+# print(model.predict(imgs))
 
 
-model.compile(optimizer=acc_opt, loss="categorical_crossentropy")
-model.summary()
-model.fit_generator(generator=train_gen,
-                    steps_per_epoch=int(image_fp.shape[0] // batch_size),
-                    epochs=1,
-                    verbose=1,
-                    callbacks=[model_checkpoint_callback,
-                               CosineAnnealingScheduler(T_max=100, eta_max=1e-2, eta_min=1e-4)])
 
-model.save("models\\densenet201-4-bottleneck")
