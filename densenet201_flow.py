@@ -125,6 +125,7 @@ print(file_df.head())
 
 datagen = image.ImageDataGenerator(preprocessing_function=preprocess_input)
 train_gen = datagen.flow_from_dataframe(file_df, target_size=(340, 500), shuffle=True, class_mode="categorical", batch_size=batch_size)
+print(train_gen.classes)
 # train_gen = Custom_Generator(image_fp, labels, batch_size)
 # print(train_gen.class_indices)
 
