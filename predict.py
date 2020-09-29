@@ -1,6 +1,5 @@
 from keras.models import load_model
-
-
+import efficientnet.keras as efn
 from pathlib import Path
 from tqdm import tqdm
 import numpy as np
@@ -114,7 +113,7 @@ class AdamAccumulate(Optimizer):
         return dict(list(base_config.items()) + list(config.items()))
 
 
-model = load_model("cp/seresnext-4", custom_objects={'AdamAccumulate': AdamAccumulate}, compile=False)
+model = load_model("models/efficientnetb3-4-bottleneck", custom_objects={'AdamAccumulate': AdamAccumulate}, compile=False)
 acc_opt = AdamAccumulate(lr=0.001, decay=1e-5, accum_iters=64)
 model.compile(loss='categorical_crossentropy', optimizer=acc_opt)
 image_fp = list(Path("data/nybg2020/test/images/").rglob("*.jpg"))
@@ -131,6 +130,7 @@ csv_str_list = []
 with open('traingen_classes', 'rb') as classes_file:
     classes_dictionary = pickle.load(classes_file)
 
+classes_dictionary = {v: k for k, v in classes_dictionary.items()}
 print(classes_dictionary)
 
 for split in tqdm(split_imgs):
@@ -138,9 +138,10 @@ for split in tqdm(split_imgs):
     fnames = []
 
     for file_name in split:
-        img = image.load_img(file_name, target_size=(224, 327))
+        img = image.load_img(file_name, target_size=(320, 320))
         x = image.img_to_array(img)
-        x = preprocess_input(x)
+        # x = preprocess_input(x)
+        x = efn.preprocess_input(x)
         imgs.append(x)
         fnames.append(os.path.basename(str(file_name)).replace(".jpg", ''))
 
@@ -148,13 +149,13 @@ for split in tqdm(split_imgs):
     preds = model.predict(imgs)
 
     for a, b in zip(fnames, preds):
-        csv_str_list.append(f"{a},{classes_dictionary.get(np.argmax(b))}")
+        csv_str_list.append(f"{a},{classes_dictionary[np.argmax(b)]}")
 
 csv_str_list.sort()
 csv_preds = "\n".join(csv_str_list)
 csv_string += csv_preds
 
-output = open("outputs/seresnext-4.txt", 'w')
+output = open("outputs/eb3-4.txt", 'w')
 output.write(csv_string)
 output.close()
 
