@@ -1,6 +1,6 @@
 from keras.applications.densenet import DenseNet201
 from keras.preprocessing import image
-from keras.layers import Dense, GlobalAveragePooling2D
+from keras.layers import Dense, GlobalAveragePooling2D, ReLU
 from keras.models import Model
 from keras.applications.densenet import preprocess_input
 from keras.utils import to_categorical
@@ -134,7 +134,7 @@ https://stackoverflow.com/questions/37340129/tensorflow-training-on-my-own-image
 acc_opt = AdamAccumulate(lr=0.001, decay=1e-5, accum_iters=64)
 
 model_checkpoint_callback = keras.callbacks.ModelCheckpoint(
-    filepath="cp/densenet201-3",
+    filepath="cp/densenet201-4",
     save_weights_only=False,
     monitor='loss',
     mode='min',
