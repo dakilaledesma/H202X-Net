@@ -14,6 +14,7 @@ from keras.utils import to_categorical
 from sklearn.utils import shuffle
 import tensorflow as tf
 import numpy as np
+import pickle
 
 # from runai.ga.keras.optimizers import Optimizer
 # from keras.models import load_model
@@ -113,7 +114,7 @@ class AdamAccumulate(Optimizer):
         return dict(list(base_config.items()) + list(config.items()))
 
 
-batch_size = 8
+batch_size = 4
 image_fp = np.load("data/image_fps.npy")
 labels = np.load("data/labels.npy")
 print(min(labels), max(labels))
@@ -126,17 +127,21 @@ file_df = pd.DataFrame(list(zip(image_fp, labels)), columns=["filename", "class"
 print(file_df.head())
 
 datagen = image.ImageDataGenerator(preprocessing_function=preprocess_input)
-train_gen = datagen.flow_from_dataframe(file_df, target_size=(224, 327), shuffle=True, class_mode="categorical", batch_size=batch_size)
+train_gen = datagen.flow_from_dataframe(file_df, target_size=(340, 500), shuffle=True, class_mode="categorical", batch_size=batch_size)
+pickled_classes = open('sr50_traingen_classes', 'wb')
+pickle.dump(train_gen.class_indices, pickled_classes)
+pickled_classes.close()
+
 # train_gen = Custom_Generator(image_fp, labels, batch_size)
 # print(train_gen.class_indices)
 
 """
 https://stackoverflow.com/questions/37340129/tensorflow-training-on-my-own-image
 """
-acc_opt = AdamAccumulate(lr=0.001, decay=1e-5, accum_iters=64)
+acc_opt = AdamAccumulate(lr=0.001, decay=1e-5, accum_iters=128)
 
 model_checkpoint_callback = keras.callbacks.ModelCheckpoint(
-    filepath="cp/seresnext-4",
+    filepath="cp/seresnext-5",
     save_weights_only=False,
     monitor='loss',
     mode='min',
@@ -147,17 +152,17 @@ steps = int(image_fp.shape[0] // batch_size)
 '''
 Without bottleneck
 '''
-# model = SEResNeXt50(weights=None, input_shape=(224, 327, 3), classes=32093)
+model = SEResNeXt50(weights=None, input_shape=(340, 500, 3), classes=32093)
 
 '''
 With bottleneck
 '''
-sr_model = SEResNeXt50(weights=None, input_shape=(224, 327, 3), include_top=False)
-bottleneck = GlobalAveragePooling2D(name='avg_pool')(sr_model.output)
-bottleneck = Dense(512, activation='relu')(bottleneck)
-model_output = Dense(32093, activation='softmax', name='fc1000')(bottleneck)
-
-model = Model(inputs=sr_model.input, outputs=model_output)
+# sr_model = SEResNeXt50(weights=None, input_shape=(340, 500, 3), include_top=False)
+# bottleneck = GlobalAveragePooling2D(name='avg_pool')(sr_model.output)
+# bottleneck = Dense(512, activation='relu')(bottleneck)
+# model_output = Dense(32093, activation='softmax', name='fc1000')(bottleneck)
+#
+# model = Model(inputs=sr_model.input, outputs=model_output)
 model.compile(optimizer=acc_opt, loss="categorical_crossentropy")
 model.summary()
 model.fit_generator(generator=train_gen,
@@ -167,4 +172,4 @@ model.fit_generator(generator=train_gen,
                     callbacks=[model_checkpoint_callback,
                                CosineAnnealingScheduler(T_max=100, eta_max=1e-2, eta_min=1e-4)])
 
-model.save("models\\seresnext-4-bottleneck")
+model.save("models\\seresnext-5-bottleneck")
