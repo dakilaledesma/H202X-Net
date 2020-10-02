@@ -113,7 +113,7 @@ class AdamAccumulate(Optimizer):
         return dict(list(base_config.items()) + list(config.items()))
 
 
-model = load_model("models/efficientnetb3-4-bottleneck", custom_objects={'AdamAccumulate': AdamAccumulate}, compile=False)
+model = load_model("models/seresnext-5-bottleneck", custom_objects={'AdamAccumulate': AdamAccumulate}, compile=False)
 acc_opt = AdamAccumulate(lr=0.001, decay=1e-5, accum_iters=64)
 model.compile(loss='categorical_crossentropy', optimizer=acc_opt)
 image_fp = list(Path("data/nybg2020/test/images/").rglob("*.jpg"))
@@ -127,7 +127,7 @@ split_imgs = np.array(np.array_split(image_fp, 3200))
 
 csv_str_list = []
 
-with open('traingen_classes', 'rb') as classes_file:
+with open('sr50_traingen_classes', 'rb') as classes_file:
     classes_dictionary = pickle.load(classes_file)
 
 classes_dictionary = {v: k for k, v in classes_dictionary.items()}
@@ -138,10 +138,10 @@ for split in tqdm(split_imgs):
     fnames = []
 
     for file_name in split:
-        img = image.load_img(file_name, target_size=(320, 320))
+        img = image.load_img(file_name, target_size=(340, 500))
         x = image.img_to_array(img)
-        # x = preprocess_input(x)
-        x = efn.preprocess_input(x)
+        x = preprocess_input(x)
+        # x = efn.preprocess_input(x)
         imgs.append(x)
         fnames.append(os.path.basename(str(file_name)).replace(".jpg", ''))
 
@@ -155,7 +155,7 @@ csv_str_list.sort()
 csv_preds = "\n".join(csv_str_list)
 csv_string += csv_preds
 
-output = open("outputs/eb3-4.txt", 'w')
+output = open("outputs/sresnext-5.txt", 'w')
 output.write(csv_string)
 output.close()
 
