@@ -4,7 +4,7 @@ from keras.preprocessing import image
 from keras.utils import to_categorical
 from keras.preprocessing import image
 from keras.layers import Dense, GlobalAveragePooling2D
-from keras.models import Model
+from keras.models import Model, load_model
 from keras.utils import to_categorical
 from sklearn.utils import shuffle
 import tensorflow as tf
@@ -140,19 +140,24 @@ https://stackoverflow.com/questions/37340129/tensorflow-training-on-my-own-image
 acc_opt = AdamAccumulate(lr=0.001, decay=1e-5, accum_iters=128)
 
 model_checkpoint_callback = keras.callbacks.ModelCheckpoint(
-    filepath="cp/efficientnetb3-5",
+    filepath="cp/efficientnetb3-5-{epoch:02d}",
     save_weights_only=False,
     monitor='loss',
     mode='min',
     save_best_only=True)
 
 '''
+Load model
+'''
+model = load_model("models/efficientnetb3-5", custom_objects={'AdamAccumulate': AdamAccumulate}, compile=False)
+
+'''
 Without bottleneck
 '''
 # model = efn.EfficientNetB3(weights='noisy-student', include_top=True, input_shape=(340, 500, 3), classes=32093)
-en_model = efn.EfficientNetB3(weights='noisy-student', include_top=False, input_shape=(340, 500, 3), pooling='avg')
-model_output = Dense(32093, activation='softmax')(en_model.output)
-model = Model(inputs=en_model.input, outputs=model_output)
+# en_model = efn.EfficientNetB3(weights='noisy-student', include_top=False, input_shape=(340, 500, 3), pooling='avg')
+# model_output = Dense(32093, activation='softmax')(en_model.output)
+# model = Model(inputs=en_model.input, outputs=model_output)
 
 '''
 With bottleneck
@@ -166,11 +171,12 @@ With bottleneck
 # model = Model(inputs=en_model.input, outputs=model_output)
 model.compile(optimizer=acc_opt, loss="categorical_crossentropy")
 model.summary()
+
 model.fit_generator(generator=train_gen,
                     steps_per_epoch=int(image_fp.shape[0] // batch_size),
-                    epochs=1,
+                    epochs=12,
                     verbose=1,
                     callbacks=[model_checkpoint_callback,
                                CosineAnnealingScheduler(T_max=100, eta_max=1e-2, eta_min=1e-4)])
 
-model.save("models\\efficientnetb3-5")
+model.save("models\\efficientnetb3-5-c")
