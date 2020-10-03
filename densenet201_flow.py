@@ -147,7 +147,11 @@ model_checkpoint_callback = keras.callbacks.ModelCheckpoint(
 steps = int(image_fp.shape[0] // batch_size)
 
 '''No bottleneck'''
-model = DenseNet201(weights=None, include_top=True, input_shape=(340, 500, 3), classes=32093)
+# model = DenseNet201(weights=None, include_top=True, input_shape=(340, 500, 3), classes=32093)
+dn_model = DenseNet201(weights='imagenet', include_top=False, input_shape=(340, 500, 3))
+model_output = GlobalAveragePooling2D(name='avg_pool')(dn_model.output)
+model_output = Dense(32093, activation='softmax')(model_output)
+model = Model(inputs=dn_model.input, outputs=model_output)
 
 '''With bottleneck'''
 # dn_model = DenseNet201(weights=None, include_top=False, input_shape=(340, 500, 3))
