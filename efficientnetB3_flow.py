@@ -177,6 +177,6 @@ model.fit_generator(generator=train_gen,
                     epochs=12,
                     verbose=1,
                     callbacks=[model_checkpoint_callback,
-                               CosineAnnealingScheduler(T_max=100, eta_max=1e-2, eta_min=1e-4)])
+                               CosineAnnealingScheduler(T_max=2, eta_max=1e-2, eta_min=1e-4)])
 
 model.save("models\\efficientnetb3-5-bottleneck")
