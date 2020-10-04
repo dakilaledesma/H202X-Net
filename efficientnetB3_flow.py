@@ -114,7 +114,7 @@ class AdamAccumulate(Optimizer):
         return dict(list(base_config.items()) + list(config.items()))
 
 
-batch_size = 4
+batch_size = 8
 image_fp = np.load("data/image_fps.npy")
 labels = np.load("data/labels.npy")
 print(min(labels), max(labels))
@@ -126,8 +126,8 @@ labels = np.array(labels, dtype=np.str)
 file_df = pd.DataFrame(list(zip(image_fp, labels)), columns=["filename", "class"])
 print(file_df.head())
 
-datagen = image.ImageDataGenerator(preprocessing_function=efn.preprocess_input)
-train_gen = datagen.flow_from_dataframe(file_df, target_size=(340, 500), shuffle=True, class_mode="categorical", batch_size=batch_size)
+datagen = image.ImageDataGenerator(horizontal_flip=True, zoom_range=[0.85, 0.85], preprocessing_function=efn.preprocess_input)
+train_gen = datagen.flow_from_dataframe(file_df, target_size=(500, 340), shuffle=True, class_mode="categorical", batch_size=batch_size)
 pickled_classes = open('eb3_traingen_classes', 'wb')
 pickle.dump(train_gen.class_indices, pickled_classes)
 pickled_classes.close()
@@ -137,10 +137,10 @@ pickled_classes.close()
 """
 https://stackoverflow.com/questions/37340129/tensorflow-training-on-my-own-image
 """
-acc_opt = AdamAccumulate(lr=0.001, decay=1e-5, accum_iters=128)
+acc_opt = AdamAccumulate(lr=0.001, decay=1e-5, accum_iters=64)
 
 model_checkpoint_callback = keras.callbacks.ModelCheckpoint(
-    filepath="cp/efficientnetb3-5-{epoch:02d}",
+    filepath="cp/efficientnetb3-5-bottleneck-{epoch:02d}",
     save_weights_only=False,
     monitor='loss',
     mode='min',
@@ -149,24 +149,24 @@ model_checkpoint_callback = keras.callbacks.ModelCheckpoint(
 '''
 Load model
 '''
-model = load_model("models/efficientnetb3-5", custom_objects={'AdamAccumulate': AdamAccumulate}, compile=False)
+# model = load_model("models/efficientnetb3-5", custom_objects={'AdamAccumulate': AdamAccumulate}, compile=False)
 
 '''
 Without bottleneck
 '''
-# model = efn.EfficientNetB3(weights='noisy-student', include_top=True, input_shape=(340, 500, 3), classes=32093)
-# en_model = efn.EfficientNetB3(weights='noisy-student', include_top=False, input_shape=(340, 500, 3), pooling='avg')
+# model = efn.EfficientNetB3(weights=None, include_top=True, input_shape=(500, 340, 3), classes=32093)
+# en_model = efn.EfficientNetB3(weights='noisy-student', include_top=False, input_shape=(500, 340, 3), pooling='avg')
 # model_output = Dense(32093, activation='softmax')(en_model.output)
 # model = Model(inputs=en_model.input, outputs=model_output)
 
 '''
 With bottleneck
 '''
-# steps = int(image_fp.shape[0] // batch_size)
-# en_model = efn.EfficientNetB3(weights=None, include_top=False, input_shape=(320, 320, 3))
-# bottleneck = GlobalAveragePooling2D(name='avg_pool')(en_model.output)
-# bottleneck = Dense(512, activation='relu')(bottleneck)
-# model_output = Dense(32093, activation='softmax', name='fc1000')(bottleneck)
+en_model = efn.EfficientNetB3(weights='noisy-student', include_top=False, input_shape=(500, 340, 3), pooling='avg')
+model_output = Dense(512, activation='relu')(en_model.output)
+model_output = Dense(32093, activation='softmax')(model_output)
+model = Model(inputs=en_model.input, outputs=model_output)
+
 
 # model = Model(inputs=en_model.input, outputs=model_output)
 model.compile(optimizer=acc_opt, loss="categorical_crossentropy")
@@ -179,4 +179,4 @@ model.fit_generator(generator=train_gen,
                     callbacks=[model_checkpoint_callback,
                                CosineAnnealingScheduler(T_max=100, eta_max=1e-2, eta_min=1e-4)])
 
-model.save("models\\efficientnetb3-5-c")
+model.save("models\\efficientnetb3-5-bottleneck")
