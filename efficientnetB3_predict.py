@@ -111,7 +111,7 @@ class AdamAccumulate(Optimizer):
         return dict(list(base_config.items()) + list(config.items()))
 
 
-model = load_model("models/efficientnetb3-5", custom_objects={'AdamAccumulate': AdamAccumulate}, compile=False)
+model = load_model("models/efficientnetb3-6-01", custom_objects={'AdamAccumulate': AdamAccumulate}, compile=False)
 acc_opt = AdamAccumulate(lr=0.001, decay=1e-5, accum_iters=64)
 model.compile(loss='categorical_crossentropy', optimizer=acc_opt)
 image_fp = list(Path("data/nybg2020/test/images/").rglob("*.jpg"))
@@ -136,7 +136,7 @@ for split in tqdm(split_imgs):
     fnames = []
 
     for file_name in split:
-        img = image.load_img(file_name, target_size=(340, 500))
+        img = image.load_img(file_name, target_size=(320, 320))
         x = image.img_to_array(img)
         # x = preprocess_input(x)
         x = efn.preprocess_input(x)
@@ -153,7 +153,7 @@ csv_str_list.sort()
 csv_preds = "\n".join(csv_str_list)
 csv_string += csv_preds
 
-output = open("outputs/eb3-5-2.txt", 'w')
+output = open("outputs/eb3-6.txt", 'w')
 output.write(csv_string)
 output.close()
 
