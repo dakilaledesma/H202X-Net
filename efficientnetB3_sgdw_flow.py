@@ -43,7 +43,7 @@ pickled_classes.close()
 # train_gen = Custom_Generator(image_fp, labels, batch_size)
 # print(train_gen.class_indices)
 
-optimizer = GradientAccumulation('sgd', accumulation_steps=128)
+_optimizer = GradientAccumulation('sgd', accumulation_steps=128)
 
 model_checkpoint_callback = keras.callbacks.ModelCheckpoint(
     filepath="cp/efficientnetb3-6-bottleneck-{epoch:02d}",
@@ -75,7 +75,7 @@ model = Model(inputs=en_model.input, outputs=model_output)
 
 
 # model = Model(inputs=en_model.input, outputs=model_output)
-model.compile(optimizer=acc_opt, loss="categorical_crossentropy")
+model.compile(optimizer=_optimizer, loss="categorical_crossentropy")
 model.summary()
 
 model.fit_generator(generator=train_gen,
@@ -83,6 +83,6 @@ model.fit_generator(generator=train_gen,
                     epochs=12,
                     verbose=1,
                     callbacks=[model_checkpoint_callback,
-                               CosineAnnealingScheduler(T_max=2, eta_max=1e-2, eta_min=1e-4)])
+                               CosineAnnealingScheduler(T_max=3, eta_max=1e-2, eta_min=1e-4)])
 
 model.save("models\\efficientnetb3-6-bottleneck")
