@@ -126,7 +126,7 @@ labels = np.array(labels, dtype=np.str)
 file_df = pd.DataFrame(list(zip(image_fp, labels)), columns=["filename", "class"])
 print(file_df.head())
 
-datagen = image.ImageDataGenerator(preprocessing_function=preprocess_input)
+datagen = image.ImageDataGenerator(horizontal_flip=True, zoom_range=[0.85, 0.85], preprocessing_function=preprocess_input)
 train_gen = datagen.flow_from_dataframe(file_df, target_size=(500, 340), shuffle=True, class_mode="categorical", batch_size=batch_size)
 pickled_classes = open('sr50_traingen_classes', 'wb')
 pickle.dump(train_gen.class_indices, pickled_classes)

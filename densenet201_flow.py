@@ -165,7 +165,7 @@ model.compile(optimizer=acc_opt, loss="categorical_crossentropy")
 model.summary()
 model.fit_generator(generator=train_gen,
                     steps_per_epoch=int(image_fp.shape[0] // batch_size),
-                    epochs=1,
+                    epochs=12,
                     verbose=1,
                     callbacks=[model_checkpoint_callback,
                                CosineAnnealingScheduler(T_max=2, eta_max=1e-2, eta_min=1e-4)])

@@ -23,7 +23,7 @@ from ml_libs.cosine_annealing import CosineAnnealingScheduler
 import pandas as pd
 import pickle
 
-batch_size = 8
+batch_size = 4
 image_fp = np.load("data/image_fps.npy")
 labels = np.load("data/labels.npy")
 print(min(labels), max(labels))
@@ -36,7 +36,7 @@ file_df = pd.DataFrame(list(zip(image_fp, labels)), columns=["filename", "class"
 print(file_df.head())
 
 datagen = image.ImageDataGenerator(horizontal_flip=True, zoom_range=[0.85, 0.85], preprocessing_function=efn.preprocess_input)
-train_gen = datagen.flow_from_dataframe(file_df, target_size=(320, 320), shuffle=True, class_mode="categorical", batch_size=batch_size)
+train_gen = datagen.flow_from_dataframe(file_df, target_size=(340, 500), shuffle=True, class_mode="categorical", batch_size=batch_size)
 pickled_classes = open('eb3_traingen_classes', 'wb')
 pickle.dump(train_gen.class_indices, pickled_classes)
 pickled_classes.close()
@@ -60,18 +60,18 @@ Load model
 '''
 Without bottleneck
 '''
-# model = efn.EfficientNetB3(weights=None, include_top=True, input_shape=(320, 320, 3), classes=32093)
-# en_model = efn.EfficientNetB3(weights='noisy-student', include_top=False, input_shape=(320, 320, 3), pooling='avg')
-# model_output = Dense(32093, activation='softmax')(en_model.output)
-# model = Model(inputs=en_model.input, outputs=model_output)
+# model = efn.EfficientNetB3(weights=None, include_top=True, input_shape=(340, 500, 3), classes=32093)
+en_model = efn.EfficientNetB3(weights='noisy-student', include_top=False, input_shape=(340, 500, 3), pooling='avg')
+model_output = Dense(32093, activation='softmax')(en_model.output)
+model = Model(inputs=en_model.input, outputs=model_output)
 
 '''
 With bottleneck
 '''
-en_model = efn.EfficientNetB3(weights='noisy-student', include_top=False, input_shape=(320, 320, 3), pooling='avg')
-model_output = Dense(512, activation='linear')(en_model.output)
-model_output = Dense(32093, activation='softmax')(model_output)
-model = Model(inputs=en_model.input, outputs=model_output)
+# en_model = efn.EfficientNetB3(weights='noisy-student', include_top=False, input_shape=(340, 500, 3), pooling='avg')
+# model_output = Dense(512, activation='linear')(en_model.output)
+# model_output = Dense(32093, activation='softmax')(model_output)
+# model = Model(inputs=en_model.input, outputs=model_output)
 
 
 # model = Model(inputs=en_model.input, outputs=model_output)
