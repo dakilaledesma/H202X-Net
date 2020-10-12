@@ -34,6 +34,12 @@ train_gen = datagen.flow_from_dataframe(file_df, target_size=(320, 320), shuffle
 pickled_classes = open('eb3_traingen_classes', 'wb')
 pickle.dump(train_gen.class_indices, pickled_classes)
 pickled_classes.close()
+
+tfds = tf.data.Dataset.from_generator(lambda: train_gen,
+                     output_types=(tf.float32, tf.float32),
+                     output_shapes=([batch_size, 320, 320, 3],
+                                    [batch_size, 32093])
+                     )
 # train_gen = Custom_Generator(image_fp, labels, batch_size)
 # print(train_gen.class_indices)
 
@@ -78,7 +84,7 @@ with strategy.scope():
     model.compile(optimizer=acc_opt, loss="categorical_crossentropy")
 
 model.summary()
-model.fit_generator(generator=train_gen,
+model.fit(tfds,
                     steps_per_epoch=int(image_fp.shape[0] // batch_size),
                     epochs=12,
                     verbose=1,
