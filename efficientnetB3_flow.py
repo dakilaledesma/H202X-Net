@@ -49,32 +49,35 @@ model_checkpoint_callback = tensorflow.keras.callbacks.ModelCheckpoint(
     mode='min',
     save_best_only=True)
 
-'''
-Load model
-'''
-# model = load_model("cp/efficientnetb3-5-bottleneck-01", custom_objects={'AdamAccumulate': AdamAccumulate}, compile=False)
+strategy = tf.distribute.MirroredStrategy()
+print(f'Number of devices: {strategy.num_replicas_in_sync}')
+with strategy.scope():
+    '''
+    Load model
+    '''
+    # model = load_model("cp/efficientnetb3-5-bottleneck-01", custom_objects={'AdamAccumulate': AdamAccumulate}, compile=False)
 
-'''
-Without bottleneck
-'''
-model = efn.EfficientNetB3(weights=None, include_top=True, input_shape=(320, 320, 3), classes=32093)
-# en_model = efn.EfficientNetB3(weights='noisy-student', include_top=False, input_shape=(320, 320, 3), pooling='avg')
-# model_output = Dense(32093, activation='softmax')(en_model.output)
-# model = Model(inputs=en_model.input, outputs=model_output)
+    '''
+    Without bottleneck
+    '''
+    model = efn.EfficientNetB3(weights=None, include_top=True, input_shape=(320, 320, 3), classes=32093)
+    # en_model = efn.EfficientNetB3(weights='noisy-student', include_top=False, input_shape=(320, 320, 3), pooling='avg')
+    # model_output = Dense(32093, activation='softmax')(en_model.output)
+    # model = Model(inputs=en_model.input, outputs=model_output)
 
-'''
-With bottleneck
-'''
-# en_model = efn.EfficientNetB3(weights='noisy-student', include_top=False, input_shape=(320, 320, 3), pooling='avg')
-# model_output = Dense(512, activation='relu')(en_model.output)
-# model_output = Dense(32093, activation='softmax')(model_output)
-# model = Model(inputs=en_model.input, outputs=model_output)
+    '''
+    With bottleneck
+    '''
+    # en_model = efn.EfficientNetB3(weights='noisy-student', include_top=False, input_shape=(320, 320, 3), pooling='avg')
+    # model_output = Dense(512, activation='relu')(en_model.output)
+    # model_output = Dense(32093, activation='softmax')(model_output)
+    # model = Model(inputs=en_model.input, outputs=model_output)
 
 
-# model = Model(inputs=en_model.input, outputs=model_output)
-model.compile(optimizer=acc_opt, loss="categorical_crossentropy")
+    # model = Model(inputs=en_model.input, outputs=model_output)
+    model.compile(optimizer=acc_opt, loss="categorical_crossentropy")
+
 model.summary()
-
 model.fit_generator(generator=train_gen,
                     steps_per_epoch=int(image_fp.shape[0] // batch_size),
                     epochs=12,
