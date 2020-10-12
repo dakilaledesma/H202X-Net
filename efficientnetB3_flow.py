@@ -1,3 +1,5 @@
+#!/usr/bin/python -u
+
 import efficientnet.tfkeras as efn
 # from tensorflow.keras.applications.nasnet import preprocess_input
 from tensorflow.keras.preprocessing import image
