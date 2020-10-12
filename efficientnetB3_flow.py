@@ -16,6 +16,8 @@ import os
 os.environ['TF_KERAS'] = '1'
 from keras_gradient_accumulation import AdamAccumulated
 
+import sys
+sys.stdout = os.fdopen(sys.stdout.fileno(), 'w', 1)
 
 batch_size = 8
 image_fp = np.load("data/image_fps.npy")
