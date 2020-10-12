@@ -9,6 +9,7 @@ from tqdm import tqdm
 import sys
 sys.stdout = os.fdopen(sys.stdout.fileno(), 'w', 1)
 
+print("Starting...")
 image_fp = list(Path("data/nybg2020/train/images/").rglob("*.jpg"))
 image_fp = [str(fp) for fp in image_fp]
 print(len(image_fp))
