@@ -14,7 +14,7 @@ image_fp = list(Path("data/nybg2020/train/images/").rglob("*.jpg"))
 image_fp = [str(fp) for fp in image_fp]
 print(len(image_fp))
 
-train_metadata = open("data/nybg2020/train/metadata.json", 'r').read()
+train_metadata = open("data/nybg2020/train/metadata.json", 'r', encoding='latin-1').read()
 train_metadata = json.loads(train_metadata)
 
 classification = {}
