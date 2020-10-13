@@ -21,7 +21,7 @@ from keras_gradient_accumulation import AdamAccumulated
 import sys
 sys.stdout = os.fdopen(sys.stdout.fileno(), 'w', 1)
 
-batch_size = 64
+batch_size = 32
 image_fp = np.load("data/image_fps.npy")
 labels = np.load("data/labels.npy")
 print(min(labels), max(labels))
@@ -34,14 +34,14 @@ file_df = pd.DataFrame(list(zip(image_fp, labels)), columns=["filename", "class"
 print(file_df.head())
 
 datagen = image.ImageDataGenerator(horizontal_flip=True, zoom_range=[0.85, 0.85], preprocessing_function=efn.preprocess_input)
-train_gen = datagen.flow_from_dataframe(file_df, target_size=(320, 320), shuffle=True, class_mode="categorical", batch_size=batch_size)
+train_gen = datagen.flow_from_dataframe(file_df, target_size=(320, 500), shuffle=True, class_mode="categorical", batch_size=batch_size)
 pickled_classes = open('eb3_traingen_classes', 'wb')
 pickle.dump(train_gen.class_indices, pickled_classes)
 pickled_classes.close()
 
 tfds = tf.data.Dataset.from_generator(lambda: train_gen,
                      output_types=(tf.float32, tf.float32),
-                     output_shapes=([batch_size, 320, 320, 3],
+                     output_shapes=([batch_size, 320, 500, 3],
                                     [batch_size, 32093])
                      )
 # train_gen = Custom_Generator(image_fp, labels, batch_size)
@@ -50,14 +50,14 @@ tfds = tf.data.Dataset.from_generator(lambda: train_gen,
 """
 https://stackoverflow.com/questions/37340129/tensorflow-training-on-my-own-image
 """
-acc_opt = AdamAccumulated(accumulation_steps=4)
+acc_opt = AdamAccumulated(accumulation_steps=8)
 
 model_checkpoint_callback = tensorflow.keras.callbacks.ModelCheckpoint(
     filepath="cp/efficientnetb3-6-{epoch:02d}",
     save_weights_only=False,
     monitor='loss',
     mode='min',
-    save_best_only=True)
+    save_best_only=False)
 
 strategy = tf.distribute.MirroredStrategy()
 print(f'Number of devices: {strategy.num_replicas_in_sync}')
@@ -70,10 +70,10 @@ with strategy.scope():
     '''
     Without bottleneck
     '''
-    model = efn.EfficientNetB3(weights=None, include_top=True, input_shape=(320, 320, 3), classes=32093)
-    # en_model = efn.EfficientNetB3(weights='noisy-student', include_top=False, input_shape=(320, 320, 3), pooling='avg')
-    # model_output = Dense(32093, activation='softmax')(en_model.output)
-    # model = Model(inputs=en_model.input, outputs=model_output)
+    # model = efn.EfficientNetB3(weights=None, include_top=True, input_shape=(320, 320, 3), classes=32093)
+    en_model = efn.EfficientNetB3(weights='noisy-student', include_top=False, input_shape=(320, 500, 3), pooling='avg')
+    model_output = Dense(32093, activation='softmax')(en_model.output)
+    model = Model(inputs=en_model.input, outputs=model_output)
 
     '''
     With bottleneck
