@@ -21,7 +21,7 @@ from keras_gradient_accumulation import AdamAccumulated
 import sys
 sys.stdout = os.fdopen(sys.stdout.fileno(), 'w', 1)
 
-batch_size = 8
+batch_size = 16
 image_fp = np.load("data/image_fps.npy")
 labels = np.load("data/labels.npy")
 print(min(labels), max(labels))
@@ -70,7 +70,7 @@ with strategy.scope():
     '''
     Without bottleneck
     '''
-    model = efn.EfficientNetB3(weights=None, include_top=True, input_shape=(320, 500, 3), classes=32093)
+    # model = efn.EfficientNetB3(weights=None, include_top=True, input_shape=(320, 500, 3), classes=32093)
     # en_model = efn.EfficientNetB3(weights='noisy-student', include_top=False, input_shape=(320, 500, 3), pooling='avg')
     # model_output = Dense(32093, activation='softmax')(en_model.output)
     # model = Model(inputs=en_model.input, outputs=model_output)
@@ -78,10 +78,10 @@ with strategy.scope():
     '''
     With bottleneck
     '''
-    # en_model = efn.EfficientNetB3(weights='noisy-student', include_top=False, input_shape=(320, 500, 3), pooling='avg')
-    # model_output = Dense(512, activation='relu')(en_model.output)
-    # model_output = Dense(32093, activation='softmax')(model_output)
-    # model = Model(inputs=en_model.input, outputs=model_output)
+    en_model = efn.EfficientNetB3(weights=None, include_top=False, input_shape=(320, 500, 3), pooling='avg')
+    model_output = Dense(512, activation='linear')(en_model.output)
+    model_output = Dense(32093, activation='softmax')(model_output)
+    model = Model(inputs=en_model.input, outputs=model_output)
 
 
     # model = Model(inputs=en_model.input, outputs=model_output)
