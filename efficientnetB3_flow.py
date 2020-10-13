@@ -43,7 +43,7 @@ tfds = tf.data.Dataset.from_generator(lambda: train_gen,
                      output_types=(tf.float32, tf.float32),
                      output_shapes=([batch_size, 320, 500, 3],
                                     [batch_size, 32093])
-                     )
+                     ).prefetch(batch_size * 10)
 # train_gen = Custom_Generator(image_fp, labels, batch_size)
 # print(train_gen.class_indices)
 
