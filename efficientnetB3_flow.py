@@ -21,7 +21,7 @@ from keras_gradient_accumulation import AdamAccumulated
 import sys
 sys.stdout = os.fdopen(sys.stdout.fileno(), 'w', 1)
 
-batch_size = 32
+batch_size = 16
 image_fp = np.load("data/image_fps.npy")
 labels = np.load("data/labels.npy")
 print(min(labels), max(labels))
@@ -50,7 +50,7 @@ tfds = tf.data.Dataset.from_generator(lambda: train_gen,
 """
 https://stackoverflow.com/questions/37340129/tensorflow-training-on-my-own-image
 """
-acc_opt = AdamAccumulated(accumulation_steps=8)
+acc_opt = AdamAccumulated(accumulation_steps=16)
 
 model_checkpoint_callback = tensorflow.keras.callbacks.ModelCheckpoint(
     filepath="cp/efficientnetb3-6-{epoch:02d}",
