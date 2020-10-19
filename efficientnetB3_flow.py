@@ -46,7 +46,7 @@ tfds = tf.data.Dataset.from_generator(lambda: train_gen,
                                       output_types=(tf.float32, tf.float32),
                                       output_shapes=([1, 320, 500, 3],
                                                      [1, 32093])
-                                      ).unbatch().batch(batch_size, drop_remainder=True).prefetch(100)
+                                      ).unbatch().batch(batch_size, drop_remainder=True).prefetch(3)
 # train_gen = Custom_Generator(image_fp, labels, batch_size)
 # print(train_gen.class_indices)
 
@@ -91,7 +91,7 @@ with strategy.scope():
 
 model.summary()
 model.fit(tfds,
-          # steps_per_epoch=int(image_fp.shape[0] // batch_size),
+          steps_per_epoch=int(image_fp.shape[0] // batch_size),
           epochs=12,
           verbose=1,
           callbacks=[model_checkpoint_callback], max_queue_size=100, workers=32, use_multiprocessing=True)
