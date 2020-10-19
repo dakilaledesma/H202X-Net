@@ -14,6 +14,7 @@ from tensorflow.keras.optimizers import Optimizer
 import pandas as pd
 import pickle
 import os
+from tqdm import tqdm
 
 os.environ['TF_KERAS'] = '1'
 from keras_gradient_accumulation import AdamAccumulated
@@ -28,7 +29,7 @@ print(min(labels), max(labels))
 labels = np.array(labels, dtype=np.uint8)
 
 imgs = []
-for file_name in image_fp:
+for file_name in tqdm(image_fp):
     img = image.load_img(file_name, target_size=(340, 500))
     x = image.img_to_array(img)
     x = efn.preprocess_input(x)
