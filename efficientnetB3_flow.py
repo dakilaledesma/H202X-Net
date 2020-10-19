@@ -22,7 +22,7 @@ import sys
 
 sys.stdout = os.fdopen(sys.stdout.fileno(), 'w', 1)
 
-batch_size = 64
+batch_size = 128
 image_fp = np.load("data/image_fps.npy")
 labels = np.load("data/labels.npy")
 print(min(labels), max(labels))
@@ -46,7 +46,7 @@ tfds = tf.data.Dataset.from_generator(lambda: train_gen,
                                       output_types=(tf.float32, tf.float32),
                                       output_shapes=([1, 320, 500, 3],
                                                      [1, 32093])
-                                      ).unbatch().batch(batch_size, drop_remainder=True).prefetch(3)
+                                      ).unbatch().batch(batch_size, drop_remainder=True).prefetch(10)
 # train_gen = Custom_Generator(image_fp, labels, batch_size)
 # print(train_gen.class_indices)
 
