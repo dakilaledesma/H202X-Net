@@ -34,16 +34,16 @@ file_df = pd.DataFrame(list(zip(image_fp, labels)), columns=["filename", "class"
 print(file_df.head())
 
 datagen = image.ImageDataGenerator(horizontal_flip=True, zoom_range=[0.85, 0.85], preprocessing_function=efn.preprocess_input)
-train_gen = datagen.flow_from_dataframe(file_df, target_size=(320, 500), shuffle=True, class_mode="categorical", batch_size=batch_size)
+train_gen = datagen.flow_from_dataframe(file_df, target_size=(320, 500), shuffle=True, class_mode="categorical", batch_size=1)
 pickled_classes = open('eb3_traingen_classes', 'wb')
 pickle.dump(train_gen.class_indices, pickled_classes)
 pickled_classes.close()
 
 tfds = tf.data.Dataset.from_generator(lambda: train_gen,
                      output_types=(tf.float32, tf.float32),
-                     output_shapes=([batch_size, 320, 500, 3],
-                                    [batch_size, 32093])
-                     ).prefetch(batch_size * 10)
+                     output_shapes=([1, 320, 500, 3],
+                                    [1, 32093])
+                     ).unbatch().batch(batch_size).prefetch(10)
 # train_gen = Custom_Generator(image_fp, labels, batch_size)
 # print(train_gen.class_indices)
 
