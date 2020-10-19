@@ -53,7 +53,7 @@ tfds = tf.data.Dataset.from_generator(lambda: train_gen,
 """
 https://stackoverflow.com/questions/37340129/tensorflow-training-on-my-own-image
 """
-acc_opt = AdamAccumulated(accumulation_steps=8)
+acc_opt = AdamAccumulated(accumulation_steps=4)
 
 model_checkpoint_callback = tensorflow.keras.callbacks.ModelCheckpoint(
     filepath="cp/efficientnetb3-6-{epoch:02d}",
