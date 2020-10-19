@@ -19,9 +19,10 @@ os.environ['TF_KERAS'] = '1'
 from keras_gradient_accumulation import AdamAccumulated
 
 import sys
+
 sys.stdout = os.fdopen(sys.stdout.fileno(), 'w', 1)
 
-batch_size = 16
+batch_size = 64
 image_fp = np.load("data/image_fps.npy")
 labels = np.load("data/labels.npy")
 print(min(labels), max(labels))
@@ -33,24 +34,26 @@ labels = np.array(labels, dtype=np.str)
 file_df = pd.DataFrame(list(zip(image_fp, labels)), columns=["filename", "class"])
 print(file_df.head())
 
-datagen = image.ImageDataGenerator(horizontal_flip=True, zoom_range=[0.85, 0.85], preprocessing_function=efn.preprocess_input)
-train_gen = datagen.flow_from_dataframe(file_df, target_size=(320, 500), shuffle=True, class_mode="categorical", batch_size=1)
+datagen = image.ImageDataGenerator(horizontal_flip=True, zoom_range=[0.85, 0.85],
+                                   preprocessing_function=efn.preprocess_input)
+train_gen = datagen.flow_from_dataframe(file_df, target_size=(320, 500), shuffle=True, class_mode="categorical",
+                                        batch_size=1)
 pickled_classes = open('eb3_traingen_classes', 'wb')
 pickle.dump(train_gen.class_indices, pickled_classes)
 pickled_classes.close()
 
 tfds = tf.data.Dataset.from_generator(lambda: train_gen,
-                     output_types=(tf.float32, tf.float32),
-                     output_shapes=([1, 320, 500, 3],
-                                    [1, 32093])
-                     ).unbatch().batch(batch_size, drop_remainder=True).prefetch(10)
+                                      output_types=(tf.float32, tf.float32),
+                                      output_shapes=([1, 320, 500, 3],
+                                                     [1, 32093])
+                                      ).unbatch().batch(batch_size, drop_remainder=True).prefetch(100)
 # train_gen = Custom_Generator(image_fp, labels, batch_size)
 # print(train_gen.class_indices)
 
 """
 https://stackoverflow.com/questions/37340129/tensorflow-training-on-my-own-image
 """
-acc_opt = AdamAccumulated(accumulation_steps=16)
+acc_opt = AdamAccumulated(accumulation_steps=8)
 
 model_checkpoint_callback = tensorflow.keras.callbacks.ModelCheckpoint(
     filepath="cp/efficientnetb3-6-{epoch:02d}",
@@ -83,15 +86,14 @@ with strategy.scope():
     model_output = Dense(32093, activation='softmax')(model_output)
     model = Model(inputs=en_model.input, outputs=model_output)
 
-
     # model = Model(inputs=en_model.input, outputs=model_output)
     model.compile(optimizer=acc_opt, loss="categorical_crossentropy")
 
 model.summary()
 model.fit(tfds,
-                    steps_per_epoch=int(image_fp.shape[0] // batch_size),
-                    epochs=12,
-                    verbose=1,
-                    callbacks=[model_checkpoint_callback], max_queue_size=100, workers=32, use_multiprocessing=True)
+          # steps_per_epoch=int(image_fp.shape[0] // batch_size),
+          epochs=12,
+          verbose=1,
+          callbacks=[model_checkpoint_callback], max_queue_size=100, workers=32, use_multiprocessing=True)
 
 model.save("models\\efficientnetb3-6")
