@@ -21,7 +21,7 @@ import sys
 
 sys.stdout = os.fdopen(sys.stdout.fileno(), 'w', 1)
 
-batch_size = 256
+batch_size = 192
 image_fp = np.load("data/image_fps.npy")
 labels = np.load("data/labels.npy")
 print(min(labels), max(labels))
