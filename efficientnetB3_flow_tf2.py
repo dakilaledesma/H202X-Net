@@ -28,7 +28,6 @@ print(min(labels), max(labels))
 labels = np.array(labels)
 
 
-
 def generator():
     i = 0
     while i < len(image_fp):
@@ -51,9 +50,10 @@ def train_preprocess(image, label):
     return image, label
 
 
-tfds = tf.data.Dataset.from_generator(generator, output_types=(tf.string, tf.float32), output_shapes=(None, [32094])).shuffle(len(image_fp))
-tfds = tfds.batch(batch_size)
+tfds = tf.data.Dataset.from_generator(generator, output_types=(tf.string, tf.float32),
+                                      output_shapes=(None, [32094])).shuffle(len(image_fp))
 tfds = tfds.map(parse_function, num_parallel_calls=20).map(train_preprocess, num_parallel_calls=20)
+tfds = tfds.batch(batch_size)
 tfds = tfds.prefetch(10)
 
 """
