@@ -86,9 +86,9 @@ with strategy.scope():
     '''
     With bottleneck
     '''
-    en_model = efn.EfficientNetB3(weights=None, include_top=False, input_shape=(320, 500, 3), pooling='avg')
+    en_model = efn.EfficientNetB3(weights=None, include_top=False, input_shape=(340, 500, 3), pooling='avg')
     model_output = Dense(512, activation='linear')(en_model.output)
-    model_output = Dense(32093, activation='softmax')(model_output)
+    model_output = Dense(32094, activation='softmax')(model_output)
     model = Model(inputs=en_model.input, outputs=model_output)
 
     # model = Model(inputs=en_model.input, outputs=model_output)
