@@ -84,6 +84,6 @@ model.fit(imgs,
                     steps_per_epoch=int(image_fp.shape[0] // batch_size),
                     epochs=12,
                     verbose=1,
-                    callbacks=[model_checkpoint_callback], max_queue_size=100, workers=32, use_multiprocessing=True)
+                    callbacks=[model_checkpoint_callback])
 
 model.save("models\\efficientnetb3-6")
