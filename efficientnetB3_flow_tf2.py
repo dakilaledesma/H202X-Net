@@ -33,7 +33,7 @@ def generator():
     while i < len(image_fp):
         label = np.zeros(32094)
         label[labels[i]] = 1
-        yield image_fp[i], labels[i]
+        yield image_fp[i], label
         i += 1
 
 
