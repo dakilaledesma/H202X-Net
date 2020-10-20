@@ -26,12 +26,15 @@ image_fp = np.load("data/image_fps.npy")
 labels = np.load("data/labels.npy")
 print(min(labels), max(labels))
 labels = np.array(labels)
+labels = tf.keras.utils.to_categorical(labels)
 
 def parse_function(filename, label):
     image_string = tf.io.read_file(filename)
     image = tf.image.decode_jpeg(image_string, channels=3)
     image = tf.image.convert_image_dtype(image, tf.float32)
     image = tf.image.resize(image, [340, 500])
+
+
     return image, label
 
 def train_preprocess(image, label):
