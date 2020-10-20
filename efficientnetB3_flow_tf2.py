@@ -28,7 +28,7 @@ print(min(labels), max(labels))
 labels = np.array(labels)
 
 def parse_function(filename, label):
-    image_string = tf.read_file(filename)
+    image_string = tf.io.read_file(filename)
     image = tf.image.decode_jpeg(image_string, channels=3)
     image = tf.image.convert_image_dtype(image, tf.float32)
     image = tf.image.resize_images(image, [340, 500])
