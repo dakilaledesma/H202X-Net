@@ -31,7 +31,7 @@ def parse_function(filename, label):
     image_string = tf.io.read_file(filename)
     image = tf.image.decode_jpeg(image_string, channels=3)
     image = tf.image.convert_image_dtype(image, tf.float32)
-    image = tf.image.resize_images(image, [340, 500])
+    image = tf.image.resize(image, [340, 500])
     return image, label
 
 def train_preprocess(image, label):
