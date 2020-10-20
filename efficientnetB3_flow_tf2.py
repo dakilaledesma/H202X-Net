@@ -26,26 +26,35 @@ image_fp = np.load("data/image_fps.npy")
 labels = np.load("data/labels.npy")
 print(min(labels), max(labels))
 labels = np.array(labels)
-labels = tf.keras.utils.to_categorical(labels)
+
+
+
+def generator():
+    i = 0
+    while i < len(image_fp):
+        label = np.zeros(32094)
+        label[labels[i]] = 1
+        yield image_fp[i], labels[i]
+        i += 1
+
 
 def parse_function(filename, label):
     image_string = tf.io.read_file(filename)
     image = tf.image.decode_jpeg(image_string, channels=3)
     image = tf.image.convert_image_dtype(image, tf.float32)
     image = tf.image.resize(image, [340, 500])
-
-
     return image, label
+
 
 def train_preprocess(image, label):
     image = tf.image.random_flip_left_right(image)
     return image, label
 
-tfds = tf.data.Dataset.from_tensor_slices((image_fp, labels)).shuffle(len(image_fp))
+
+tfds = tf.data.Dataset.from_generator(generator, output_types=(tf.string, tf.float32), output_shapes=(None, [32094])).shuffle(len(image_fp))
 tfds = tfds.batch(batch_size)
 tfds = tfds.map(parse_function, num_parallel_calls=20).map(train_preprocess, num_parallel_calls=20)
 tfds = tfds.prefetch(10)
-
 
 """
 https://stackoverflow.com/questions/37340129/tensorflow-training-on-my-own-image
