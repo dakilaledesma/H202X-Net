@@ -9,7 +9,6 @@ from sklearn.utils import shuffle
 import tensorflow as tf
 import numpy as np
 import tensorflow.keras
-from sklearn.utils import shuffle
 import tensorflow.keras.backend as K
 from tensorflow.keras.optimizers import Optimizer
 import pandas as pd
@@ -25,10 +24,18 @@ sys.stdout = os.fdopen(sys.stdout.fileno(), 'w', 1)
 batch_size = 128
 image_fp = np.load("data/image_fps.npy")
 labels = np.load("data/labels.npy")
+print(min(labels), max(labels))
 labels = np.array(labels)
 
-image_fp, labels = shuffle(image_fp, labels)
-labels = tf.keras.utils.to_categorical(labels)
+
+def generator():
+    i = 0
+    while i < len(image_fp):
+        label = np.zeros(32094)
+        label[labels[i]] = 1
+        yield image_fp[i], label
+        i += 1
+
 
 def parse_function(filename, label):
     image_string = tf.io.read_file(filename)
@@ -43,7 +50,8 @@ def train_preprocess(image, label):
     return image, label
 
 
-tfds = tf.data.Dataset.from_tensor_slices((image_fp, labels)).shuffle(buffer_size=30000)
+tfds = tf.data.Dataset.from_generator(generator, output_types=(tf.string, tf.float32),
+                                      output_shapes=(None, [32094])).shuffle(len(image_fp))
 tfds = tfds.map(parse_function, num_parallel_calls=20).map(train_preprocess, num_parallel_calls=20)
 tfds = tfds.batch(batch_size)
 tfds = tfds.prefetch(10)
@@ -78,9 +86,9 @@ with strategy.scope():
     '''
     With bottleneck
     '''
-    en_model = efn.EfficientNetB3(weights=None, include_top=False, input_shape=(320, 500, 3), pooling='avg')
+    en_model = efn.EfficientNetB3(weights=None, include_top=False, input_shape=(340, 500, 3), pooling='avg')
     model_output = Dense(512, activation='linear')(en_model.output)
-    model_output = Dense(32093, activation='softmax')(model_output)
+    model_output = Dense(32094, activation='softmax')(model_output)
     model = Model(inputs=en_model.input, outputs=model_output)
 
     # model = Model(inputs=en_model.input, outputs=model_output)
