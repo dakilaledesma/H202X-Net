@@ -25,30 +25,23 @@ batch_size = 128
 image_fp = np.load("data/image_fps.npy")
 labels = np.load("data/labels.npy")
 print(min(labels), max(labels))
-labels = np.array(labels, dtype=np.str)
-# labels = to_categorical(labels, dtype=np.int)
-# print(len(labels[0]))
-# image_fp, labels = shuffle(image_fp, labels)
+labels = np.array(labels)
 
-file_df = pd.DataFrame(list(zip(image_fp, labels)), columns=["filename", "class"])
-print(file_df.head())
+def parse_function(filename, label):
+    image_string = tf.read_file(filename)
+    image = tf.image.decode_jpeg(image_string, channels=3)
+    image = tf.image.convert_image_dtype(image, tf.float32)
+    image = tf.image.resize_images(image, [340, 500])
+    return image, label
 
-datagen = image.ImageDataGenerator(horizontal_flip=True, zoom_range=[0.85, 0.85],
-                                   preprocessing_function=efn.preprocess_input)
-train_gen = datagen.flow_from_dataframe(file_df, target_size=(320, 500), shuffle=True, class_mode="categorical",
-                                        batch_size=1)
-pickled_classes = open('eb3_traingen_classes', 'wb')
-pickle.dump(train_gen.class_indices, pickled_classes)
-pickled_classes.close()
+def train_preprocess(image, label):
+    image = tf.image.random_flip_left_right(image)
+    return image, label
 
-tfds = tf.data.Dataset.from_generator(lambda: train_gen,
-                                      output_types=(tf.float32, tf.float32),
-                                      output_shapes=([1, 320, 500, 3],
-                                                     [1, 32093])
-                                      ).unbatch().batch(batch_size, drop_remainder=True).prefetch(10)
+tfds = tf.data.Dataset.from_tensor_slices((image_fp, labels)).shuffle(len(image_fp))
+tfds = tfds.map(parse_function, num_parallel_calls=20).map(train_preprocess, num_parallel_calls=20)
+tfds = tfds.batch(batch_size).prefetch(10)
 
-# train_gen = Custom_Generator(image_fp, labels, batch_size)
-# print(train_gen.class_indices)
 
 """
 https://stackoverflow.com/questions/37340129/tensorflow-training-on-my-own-image
@@ -93,6 +86,6 @@ model.fit(tfds,
           steps_per_epoch=int(image_fp.shape[0] // batch_size),
           epochs=12,
           verbose=1,
-          callbacks=[model_checkpoint_callback], max_queue_size=100, workers=32, use_multiprocessing=True)
+          callbacks=[model_checkpoint_callback], max_queue_size=100, workers=20, use_multiprocessing=True)
 
 model.save("models\\efficientnetb3-6")
