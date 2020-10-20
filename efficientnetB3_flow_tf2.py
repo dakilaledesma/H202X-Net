@@ -42,8 +42,9 @@ def train_preprocess(image, label):
     return image, label
 
 tfds = tf.data.Dataset.from_tensor_slices((image_fp, labels)).shuffle(len(image_fp))
+tfds = tfds.batch(batch_size)
 tfds = tfds.map(parse_function, num_parallel_calls=20).map(train_preprocess, num_parallel_calls=20)
-tfds = tfds.batch(batch_size).prefetch(10)
+tfds = tfds.prefetch(10)
 
 
 """
