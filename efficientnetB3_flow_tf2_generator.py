@@ -41,7 +41,7 @@ def parse_function(filename, label):
     image_string = tf.io.read_file(filename)
     image = tf.image.decode_jpeg(image_string, channels=3)
     image = tf.image.convert_image_dtype(image, tf.float32)
-    image = tf.image.resize(image, [340, 500])
+    image = tf.image.resize(image, [320, 320])
     return image, label
 
 
@@ -61,7 +61,7 @@ https://stackoverflow.com/questions/37340129/tensorflow-training-on-my-own-image
 """
 
 model_checkpoint_callback = tensorflow.keras.callbacks.ModelCheckpoint(
-    filepath="cp/efficientnetb3-6-{epoch:02d}",
+    filepath="cp/efficientnetb3-7-{epoch:02d}",
     save_weights_only=False,
     monitor='loss',
     mode='min',
@@ -79,14 +79,14 @@ with strategy.scope():
     Without bottleneck
     '''
     # model = efn.EfficientNetB3(weights=None, include_top=True, input_shape=(320, 500, 3), classes=32093)
-    en_model = efn.EfficientNetB3(weights='noisy-student', include_top=False, input_shape=(340, 500, 3), pooling='avg')
+    en_model = efn.EfficientNetB3(weights='noisy-student', include_top=False, input_shape=(320, 320, 3), pooling='avg')
     model_output = Dense(32094, activation='softmax')(en_model.output)
     model = Model(inputs=en_model.input, outputs=model_output)
 
     '''
     With bottleneck
     '''
-    # en_model = efn.EfficientNetB3(weights='noisy-student', include_top=False, input_shape=(340, 500, 3), pooling='avg')
+    # en_model = efn.EfficientNetB3(weights='noisy-student', include_top=False, input_shape=(320, 320, 3), pooling='avg')
     # model_output = Dense(512, activation='linear')(en_model.output)
     # model_output = Dense(32094, activation='softmax')(model_output)
     # model = Model(inputs=en_model.input, outputs=model_output)
@@ -101,4 +101,4 @@ model.fit(tfds,
           verbose=2,
           callbacks=[model_checkpoint_callback], max_queue_size=100, workers=20, use_multiprocessing=True)
 
-model.save("models\\efficientnetb3-6")
+model.save("models\\efficientnetb3-7")
