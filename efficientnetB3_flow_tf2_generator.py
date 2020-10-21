@@ -79,17 +79,17 @@ with strategy.scope():
     Without bottleneck
     '''
     # model = efn.EfficientNetB3(weights=None, include_top=True, input_shape=(320, 500, 3), classes=32093)
-    # en_model = efn.EfficientNetB3(weights='noisy-student', include_top=False, input_shape=(320, 500, 3), pooling='avg')
-    # model_output = Dense(32093, activation='softmax')(en_model.output)
-    # model = Model(inputs=en_model.input, outputs=model_output)
+    en_model = efn.EfficientNetB3(weights='noisy-student', include_top=False, input_shape=(340, 500, 3), pooling='avg')
+    model_output = Dense(32093, activation='softmax')(en_model.output)
+    model = Model(inputs=en_model.input, outputs=model_output)
 
     '''
     With bottleneck
     '''
-    en_model = efn.EfficientNetB3(weights=None, include_top=False, input_shape=(340, 500, 3), pooling='avg')
-    model_output = Dense(512, activation='linear')(en_model.output)
-    model_output = Dense(32094, activation='softmax')(model_output)
-    model = Model(inputs=en_model.input, outputs=model_output)
+    # en_model = efn.EfficientNetB3(weights='noisy-student', include_top=False, input_shape=(340, 500, 3), pooling='avg')
+    # model_output = Dense(512, activation='linear')(en_model.output)
+    # model_output = Dense(32094, activation='softmax')(model_output)
+    # model = Model(inputs=en_model.input, outputs=model_output)
 
     # model = Model(inputs=en_model.input, outputs=model_output)
     model.compile(optimizer='adam', loss="categorical_crossentropy")
