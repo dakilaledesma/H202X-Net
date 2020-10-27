@@ -98,7 +98,7 @@ model.summary()
 model.fit(tfds,
           steps_per_epoch=int(image_fp.shape[0] // batch_size),
           epochs=12,
-          verbose=2,
+          verbose=1,
           callbacks=[model_checkpoint_callback], max_queue_size=100, workers=20, use_multiprocessing=True)
 
 model.save("models\\efficientnetb3-7")
