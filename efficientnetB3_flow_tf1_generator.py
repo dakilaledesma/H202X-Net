@@ -61,7 +61,7 @@ https://stackoverflow.com/questions/37340129/tensorflow-training-on-my-own-image
 """
 
 model_checkpoint_callback = tensorflow.keras.callbacks.ModelCheckpoint(
-    filepath="cp/efficientnetb3-7-{epoch:02d}",
+    filepath="cp/efficientnetb3-7-tf1-{epoch:02d}",
     save_weights_only=False,
     monitor='loss',
     mode='min',
@@ -103,4 +103,4 @@ model.fit(tfds,
           verbose=2,
           callbacks=[model_checkpoint_callback], max_queue_size=100, workers=20, use_multiprocessing=True)
 
-model.save("models\\efficientnetb3-7")
+model.save("models\\efficientnetb3-7-tf1")
