@@ -53,7 +53,7 @@ def train_preprocess(image, label):
 tfds = tf.data.Dataset.from_generator(generator, output_types=(tf.string, tf.float32),
                                       output_shapes=(None, [32094])).shuffle(len(image_fp))
 tfds = tfds.map(parse_function, num_parallel_calls=20).map(train_preprocess, num_parallel_calls=20)
-tfds = tfds.repeat().batch(batch_size)
+tfds = tfds.batch(batch_size).repeat()
 tfds = tfds.prefetch(10)
 
 """
