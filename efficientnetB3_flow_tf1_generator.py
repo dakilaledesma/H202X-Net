@@ -28,20 +28,11 @@ print(min(labels), max(labels))
 labels = np.array(labels)
 
 
-def multigen(gen_func):
-    class _multigen(object):
-        def __init__(self, *args, **kwargs):
-            self.__args = args
-            self.__kwargs = kwargs
-        def __iter__(self):
-            return gen_func(*self.__args, **self.__kwargs)
-    return _multigen
-
-
-@multigen
 def generator():
     i = 0
-    while i < len(image_fp):
+    while True:
+        if not i < len(image_fp):
+            i = 0
         label = np.zeros(32094)
         label[labels[i]] = 1
         yield image_fp[i], label
