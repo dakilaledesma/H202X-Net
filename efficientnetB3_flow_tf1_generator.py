@@ -22,6 +22,7 @@ import sys
 sys.stdout = os.fdopen(sys.stdout.fileno(), 'w', 1)
 
 batch_size = 128
+epochs = 12
 image_fp = np.load("data/image_fps.npy")
 labels = np.load("data/labels.npy")
 print(min(labels), max(labels))
@@ -30,9 +31,7 @@ labels = np.array(labels)
 
 def generator():
     i = 0
-    while True:
-        if not i < len(image_fp):
-            i = 0
+    while i < len(image_fp) * epochs:
         label = np.zeros(32094)
         label[labels[i]] = 1
         yield image_fp[i], label
@@ -101,7 +100,7 @@ with strategy.scope():
 model.summary()
 model.fit(tfds,
           steps_per_epoch=int(image_fp.shape[0] // batch_size),
-          epochs=12,
+          epochs=epochs,
           verbose=1,
           callbacks=[model_checkpoint_callback], max_queue_size=100, workers=20, use_multiprocessing=True)
 
