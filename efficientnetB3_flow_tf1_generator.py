@@ -32,9 +32,12 @@ labels = np.array(labels)
 def generator():
     i = 0
     while i < len(image_fp) * epochs:
+        wrap_index = i
+        while i >= len(image_fp):
+            wrap_index -= len(image_fp)
         label = np.zeros(32094)
-        label[labels[i]] = 1
-        yield image_fp[i], label
+        label[labels[wrap_index]] = 1
+        yield image_fp[wrap_index], label
         i += 1
 
 
