@@ -28,16 +28,25 @@ labels = np.load("data/labels.npy")
 print(min(labels), max(labels))
 labels = np.array(labels)
 
+#
+# def generator():
+#     i = 0
+#     while i < len(image_fp) * epochs:
+#         wrap_index = i
+#         while i >= len(image_fp):
+#             wrap_index -= len(image_fp)
+#         label = np.zeros(32094)
+#         label[labels[wrap_index]] = 1
+#         yield image_fp[wrap_index], label
+#         i += 1
+
 
 def generator():
     i = 0
-    while i < len(image_fp) * epochs:
-        wrap_index = i
-        while i >= len(image_fp):
-            wrap_index -= len(image_fp)
+    while i < len(image_fp):
         label = np.zeros(32094)
-        label[labels[wrap_index]] = 1
-        yield image_fp[wrap_index], label
+        label[labels[i]] = 1
+        yield image_fp[i], label
         i += 1
 
 
@@ -58,7 +67,7 @@ tfds = tf.data.Dataset.from_generator(generator, output_types=(tf.string, tf.flo
                                       output_shapes=(None, [32094])).shuffle(len(image_fp))
 tfds = tfds.map(parse_function, num_parallel_calls=20).map(train_preprocess, num_parallel_calls=20)
 tfds = tfds.batch(batch_size)
-tfds = tfds.prefetch(10)
+tfds = tfds.prefetch(10).repeat()
 
 """
 https://stackoverflow.com/questions/37340129/tensorflow-training-on-my-own-image
