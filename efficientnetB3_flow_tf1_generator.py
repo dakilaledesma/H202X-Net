@@ -67,7 +67,7 @@ tfds = tf.data.Dataset.from_generator(generator, output_types=(tf.string, tf.flo
                                       output_shapes=(None, [32094])).shuffle(len(image_fp))
 tfds = tfds.map(parse_function, num_parallel_calls=20).map(train_preprocess, num_parallel_calls=20)
 tfds = tfds.batch(batch_size)
-tfds = tfds.prefetch(10).repeat()
+tfds = tfds.prefetch(10)
 
 """
 https://stackoverflow.com/questions/37340129/tensorflow-training-on-my-own-image
