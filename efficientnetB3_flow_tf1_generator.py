@@ -33,7 +33,7 @@ def generator():
     i = 0
     while i < len(image_fp) * epochs:
         wrap_index = i
-        while i >= len(image_fp):
+        while wrap_index >= len(image_fp):
             wrap_index -= len(image_fp)
         label = np.zeros(32094)
         label[labels[wrap_index]] = 1
@@ -64,7 +64,7 @@ def train_preprocess(image, label):
 
 
 tfds = tf.data.Dataset.from_generator(generator, output_types=(tf.string, tf.float32),
-                                      output_shapes=(None, [32094]))
+                                      output_shapes=(None, [32094])).shuffle(len(image_fp))
 tfds = tfds.map(parse_function, num_parallel_calls=20).map(train_preprocess, num_parallel_calls=20)
 tfds = tfds.batch(batch_size)
 tfds = tfds.prefetch(10)
