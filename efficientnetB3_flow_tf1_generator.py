@@ -105,7 +105,7 @@ with strategy.scope():
     # model = Model(inputs=en_model.input, outputs=model_output)
 
     # model = Model(inputs=en_model.input, outputs=model_output)
-    model.compile(optimizer='adam', loss="categorical_crossentropy")
+    model.compile(optimizer='adam', loss="categorical_crossentropy", metrics=['acc'])
 
 
 
