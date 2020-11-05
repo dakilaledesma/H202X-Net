@@ -41,22 +41,17 @@ image_fp, labels = shuffle(image_fp, labels, random_state=1024)
 #         yield image_fp[wrap_index], label
 #         i += 1
 
-possible_i = set(range(len(image_fp)))
+random_indices = []
+for i in range(epochs):
+    random_indices += random.sample(range(len(image_fp)), len(image_fp))
+    
+
 def generator():
     i = 0
-    used_i = set()
     while i < len(image_fp) * epochs:
-        valid_i = possible_i - used_i
-        if len(valid_i) == 0:
-            used_i = set()
-            valid_i = set(range(len(image_fp)))
-
-        new_i = random.choice(list(valid_i))
-
         label = np.zeros(32094)
-        label[labels[new_i]] = 1
-        yield image_fp[new_i], label
-        used_i.add(i % len(image_fp))
+        label[labels[random_indices[i]]] = 1
+        yield image_fp[random_indices[i]], label
         i += 1
 
 
