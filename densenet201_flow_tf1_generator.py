@@ -106,7 +106,7 @@ with strategy.scope():
     '''
     Without bottleneck
     '''
-    model = DenseNet201(weights=None, include_top=False, input_shape=(320, 320, 3), classes=32094)
+    model = DenseNet201(weights=None, include_top=True, input_shape=(320, 320, 3), classes=32094)
 
     '''
     With bottleneck
@@ -117,7 +117,7 @@ with strategy.scope():
     # model = Model(inputs=en_model.input, outputs=model_output)
 
     # model = Model(inputs=en_model.input, outputs=model_output)
-    model.compile(optimizer='adam', loss="categorical_crossentropy")
+    model.compile(optimizer='adam', loss="categorical_crossentropy", metrics=['acc'])
 
 model.summary()
 model.fit(tfds,
