@@ -29,15 +29,23 @@ print(min(labels), max(labels))
 labels = np.array(labels)
 
 
+# def generator():
+#     i = 0
+#     while i < len(image_fp) * epochs:
+#         wrap_index = i
+#         while wrap_index >= len(image_fp):
+#             wrap_index -= len(image_fp)
+#         label = np.zeros(32094)
+#         label[labels[wrap_index]] = 1
+#         yield image_fp[wrap_index], label
+#         i += 1
+
 def generator():
     i = 0
-    while i < len(image_fp) * epochs:
-        wrap_index = i
-        while wrap_index >= len(image_fp):
-            wrap_index -= len(image_fp)
+    while i < len(image_fp):
         label = np.zeros(32094)
-        label[labels[wrap_index]] = 1
-        yield image_fp[wrap_index], label
+        label[labels[i % len(image_fp)]] = 1
+        yield image_fp[i % len(image_fp)], label
         i += 1
 
 
