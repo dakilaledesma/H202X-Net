@@ -27,7 +27,7 @@ image_fp = np.load("data/image_fps.npy")
 labels = np.load("data/labels.npy")
 print(min(labels), max(labels))
 labels = np.array(labels)
-
+image_fp, labels = shuffle(image_fp, labels, random_state=1024)
 
 # def generator():
 #     i = 0
