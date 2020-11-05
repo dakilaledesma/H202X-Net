@@ -1,8 +1,8 @@
 #!/usr/bin/python -u
 
-import efficientnet.tfkeras as efn
-# from tensorflow.keras.applications.nasnet import preprocess_input
+from tensorflow.keras.applications.densenet import preprocess_input
 from tensorflow.keras.preprocessing import image
+from tensorflow.keras.applications.densenet import DenseNet201
 from tensorflow.keras.layers import Dense, GlobalAveragePooling2D
 from tensorflow.keras.models import Model, load_model
 from sklearn.utils import shuffle
@@ -23,12 +23,11 @@ import sys
 sys.stdout = os.fdopen(sys.stdout.fileno(), 'w', 1)
 
 batch_size = 128
-epochs = 12
+epochs = 20
 image_fp = np.load("data/image_fps.npy")
 labels = np.load("data/labels.npy")
 print(min(labels), max(labels))
 labels = np.array(labels)
-image_fp, labels = shuffle(image_fp, labels, random_state=1024)
 
 # def generator():
 #     i = 0
@@ -44,7 +43,7 @@ image_fp, labels = shuffle(image_fp, labels, random_state=1024)
 random_indices = []
 for i in range(epochs):
     random_indices += random.sample(range(len(image_fp)), len(image_fp))
-    
+
 
 def generator():
     i = 0
@@ -73,6 +72,7 @@ def parse_function(filename, label):
 
 
 def train_preprocess(image, label):
+    image = preprocess_input(image)
     image = tf.image.random_flip_left_right(image)
     return image, label
 
@@ -88,7 +88,7 @@ https://stackoverflow.com/questions/37340129/tensorflow-training-on-my-own-image
 """
 
 model_checkpoint_callback = tensorflow.keras.callbacks.ModelCheckpoint(
-    filepath="cp/efficientnetb3-7-tf1-{epoch:02d}",
+    filepath="cp/densenet201-7-tf1-{epoch:02d}",
     save_weights_only=False,
     monitor='loss',
     mode='min',
@@ -100,28 +100,23 @@ with strategy.scope():
     '''
     Load model
     '''
-    # model = load_model("cp/efficientnetb3-5-bottleneck-01", custom_objects={'AdamAccumulate': AdamAccumulate}, compile=False)
+    # model = load_model("cp/densenet201-5-bottleneck-01", custom_objects={'AdamAccumulate': AdamAccumulate}, compile=False)
 
     '''
     Without bottleneck
     '''
-    # model = efn.EfficientNetB3(weights=None, include_top=True, input_shape=(320, 500, 3), classes=32093)
-    en_model = efn.EfficientNetB3(weights=None, include_top=False, input_shape=(320, 320, 3), pooling='avg')
-    model_output = Dense(32094, activation='softmax')(en_model.output)
-    model = Model(inputs=en_model.input, outputs=model_output)
+    model = DenseNet201(weights="imagenet", include_top=False, input_shape=(320, 320, 3), classes=32094)
 
     '''
     With bottleneck
     '''
-    # en_model = efn.EfficientNetB3(weights='noisy-student', include_top=False, input_shape=(320, 320, 3), pooling='avg')
+    # en_model = DenseNet201(weights='noisy-student', include_top=False, input_shape=(320, 320, 3), pooling='avg')
     # model_output = Dense(512, activation='linear')(en_model.output)
     # model_output = Dense(32094, activation='softmax')(model_output)
     # model = Model(inputs=en_model.input, outputs=model_output)
 
     # model = Model(inputs=en_model.input, outputs=model_output)
     model.compile(optimizer='adam', loss="categorical_crossentropy", metrics=['acc'])
-
-
 
 model.summary()
 model.fit(tfds,
@@ -130,4 +125,4 @@ model.fit(tfds,
           verbose=1,
           callbacks=[model_checkpoint_callback], max_queue_size=100, workers=20, use_multiprocessing=True)
 
-model.save("models\\efficientnetb3-7-tf1")
+model.save("models/densenet201-7-tf1")
