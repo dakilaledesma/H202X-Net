@@ -56,7 +56,7 @@ def generator():
         label = np.zeros(32094)
         label[labels[new_i]] = 1
         yield image_fp[new_i], label
-        used_i.add(i % image_fp)
+        used_i.add(i % len(image_fp))
         i += 1
 
 
