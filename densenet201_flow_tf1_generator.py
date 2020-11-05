@@ -74,6 +74,7 @@ def parse_function(filename, label):
 
 def train_preprocess(image, label):
     image = tf.image.random_flip_left_right(image)
+    image = tf.image.convert_image_dtype(image, tf.float32)
     return image, label
 
 
