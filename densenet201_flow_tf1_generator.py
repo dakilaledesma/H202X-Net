@@ -48,7 +48,7 @@ for i in range(epochs):
 def generator():
     i = 0
     while i < len(image_fp) * epochs:
-        label = np.zeros(32094, dtype='uint8')
+        label = np.zeros(32094, dtype='float32')
         label[labels[random_indices[i]]] = 1
         yield image_fp[random_indices[i]], label
         i += 1
@@ -66,8 +66,8 @@ def generator():
 def parse_function(filename, label):
     image_string = tf.io.read_file(filename)
     image = tf.image.decode_jpeg(image_string, channels=3)
-    image = preprocess_input(image)
     image = tf.image.convert_image_dtype(image, tf.float32)
+    image = preprocess_input(image)
     image = tf.image.resize(image, [320, 320])
     return image, label
 
@@ -78,7 +78,7 @@ def train_preprocess(image, label):
     return image, label
 
 
-tfds = tf.data.Dataset.from_generator(generator, output_types=(tf.string, tf.uint8),
+tfds = tf.data.Dataset.from_generator(generator, output_types=(tf.string, tf.float32),
                                       output_shapes=(None, [32094]))
 tfds = tfds.map(parse_function, num_parallel_calls=20).map(train_preprocess, num_parallel_calls=20)
 tfds = tfds.batch(batch_size)
