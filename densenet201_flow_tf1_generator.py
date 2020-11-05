@@ -66,13 +66,13 @@ def generator():
 def parse_function(filename, label):
     image_string = tf.io.read_file(filename)
     image = tf.image.decode_jpeg(image_string, channels=3)
+    image = preprocess_input(image)
     image = tf.image.convert_image_dtype(image, tf.float32)
     image = tf.image.resize(image, [320, 320])
     return image, label
 
 
 def train_preprocess(image, label):
-    image = preprocess_input(image)
     image = tf.image.random_flip_left_right(image)
     return image, label
 
