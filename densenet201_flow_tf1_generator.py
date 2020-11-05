@@ -105,7 +105,7 @@ with strategy.scope():
     '''
     Without bottleneck
     '''
-    model = DenseNet201(weights="imagenet", include_top=False, input_shape=(320, 320, 3), classes=32094)
+    model = DenseNet201(weights=None, include_top=False, input_shape=(320, 320, 3), classes=32094)
 
     '''
     With bottleneck
