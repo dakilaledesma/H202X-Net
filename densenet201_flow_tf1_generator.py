@@ -101,12 +101,12 @@ with strategy.scope():
     '''
     Load model
     '''
-    model = load_model("cp/densenet201-7-tf1-05", compile=False)
+    # model = load_model("cp/densenet201-5-bottleneck-01", compile=False)
 
     '''
     Without bottleneck
     '''
-    # model = DenseNet201(weights=None, include_top=True, input_shape=(320, 320, 3), classes=32094)
+    model = DenseNet201(weights=None, include_top=True, input_shape=(320, 320, 3), classes=32094)
 
     '''
     With bottleneck
