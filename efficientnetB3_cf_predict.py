@@ -128,6 +128,15 @@ csv_str_list = []
 with open('eb3_traingen_classes', 'rb') as classes_file:
     classes_dictionary = pickle.load(classes_file)
 
+with open('class_frequency', 'rb') as classes_file:
+    class_freq = pickle.load(classes_file)
+
+classes_mult = np.zeros(32093)
+for key in class_freq.keys():
+    classes_mult[classes_dictionary[str(key)]] = 1/class_freq[key]
+
+print(classes_mult[:10])
+
 classes_dictionary = {v: k for k, v in classes_dictionary.items()}
 print(classes_dictionary)
 
@@ -147,18 +156,19 @@ for split in tqdm(split_imgs):
     preds = model.predict(imgs)
 
     for a, b in zip(fnames, preds):
+        b = b * classes_mult
         csv_str_list.append(f"{a},{classes_dictionary[np.argmax(b)]}")
 
 csv_str_list.sort()
 csv_preds = "\n".join(csv_str_list)
 csv_string += csv_preds
 
-output = open("outputs/eb3-7-squished-bottleneck-10.txt", 'w')
+output = open("outputs/eb3-7-squished-bottleneck-10-cf.txt", 'w')
 output.write(csv_string)
 output.close()
 
 # for file_name in tqdm(image_fp):
-#     img = image.load_img(file_name, target_size=(340, 500))
+#     img = image.load_img(file_name, target_size=(320, 320))
 #     x = image.img_to_array(img)
 #     x = efn.preprocess_input(x)
 #     imgs.append(x)

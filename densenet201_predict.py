@@ -1,5 +1,5 @@
 from keras.preprocessing import image
-from keras.models import load_model
+from tensorflow.keras.models import load_model
 from keras.optimizers import Optimizer
 
 from pathlib import Path
@@ -8,15 +8,15 @@ import numpy as np
 import os
 
 from keras.applications.densenet import DenseNet201
-from keras.preprocessing import image
-from keras.applications.nasnet import preprocess_input
+from tensorflow.keras.preprocessing import image
+from tensorflow.keras.applications.densenet import preprocess_input
 from keras.utils import to_categorical
 from sklearn.utils import shuffle
 import tensorflow as tf
 import keras
-import keras.backend as K
+import tensorflow.keras.backend as K
 from keras.legacy import interfaces
-from keras.optimizers import Optimizer
+from tensorflow.keras.optimizers import Optimizer
 
 class AdamAccumulate(Optimizer):
     def __init__(self, lr=0.001, beta_1=0.9, beta_2=0.999,
@@ -110,7 +110,7 @@ class AdamAccumulate(Optimizer):
         return dict(list(base_config.items()) + list(config.items()))
 
 
-model = load_model("models\\densenet201-2", custom_objects={'AdamAccumulate': AdamAccumulate})
+model = load_model("models\\densenet201-7-tf1")
 image_fp = list(Path("data/nybg2020/test/images/").rglob("*.jpg"))
 
 csv_string = "Id,Predicted\n"
@@ -120,16 +120,29 @@ imgs = []
 image_fp.sort()
 split_imgs = np.array(np.array_split(image_fp, 3200))
 
+
+# def generator():
+#     i = 0
+#     while i < len(image_fp):
+#         label = np.zeros(32094)
+#         label[labels[i]] = 1
+#         yield image_fp[i], label
+#         i += 1
+
+
+
 csv_str_list = []
 for split in tqdm(split_imgs):
     imgs = []
     fnames = []
 
     for file_name in split:
-        img = image.load_img(file_name, target_size=(340, 500))
-        x = image.img_to_array(img)
-        x = efn.preprocess_input(x)
-        imgs.append(x)
+        image_string = tf.io.read_file(str(file_name))
+        image = tf.image.decode_jpeg(image_string, channels=3)
+        image = tf.image.convert_image_dtype(image, tf.float32)
+        image = preprocess_input(image)
+        image = tf.image.resize(image, [320, 320])
+        imgs.append(image)
         fnames.append(os.path.basename(str(file_name)).replace(".jpg", ''))
 
     imgs = np.array(imgs)
@@ -142,7 +155,7 @@ csv_str_list.sort()
 csv_preds = "\n".join(csv_str_list)
 csv_string += csv_preds
 
-output = open("outputs/densenet201-2-ga.txt", 'w')
+output = open("outputs/densenet201-7-tf1-20.txt", 'w')
 output.write(csv_string)
 output.close()
 

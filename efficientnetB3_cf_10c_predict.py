@@ -128,8 +128,22 @@ csv_str_list = []
 with open('eb3_traingen_classes', 'rb') as classes_file:
     classes_dictionary = pickle.load(classes_file)
 
+with open('class_frequency', 'rb') as classes_file:
+    class_freq = pickle.load(classes_file)
+
+classes_mult = np.zeros(32093)
+for key in class_freq.keys():
+    classes_mult[classes_dictionary[str(key)]] = 1/class_freq[key]
+
+print(classes_mult[:10])
+
 classes_dictionary = {v: k for k, v in classes_dictionary.items()}
 print(classes_dictionary)
+
+predictions = []
+prediction_ids = []
+output_preds = np.zeros((len(image_fp), len(classes_mult)))
+i_counter = 0
 
 for split in tqdm(split_imgs):
     imgs = []
@@ -147,18 +161,44 @@ for split in tqdm(split_imgs):
     preds = model.predict(imgs)
 
     for a, b in zip(fnames, preds):
-        csv_str_list.append(f"{a},{classes_dictionary[np.argmax(b)]}")
+        b = b * classes_mult
+        prediction_ids.append(a)
+        output_preds[i_counter] = b
+        # csv_str_list.append(f"{a},{classes_dictionary[np.argmax(b)]}")
+        i_counter += 1
+
+start_low_classfreq = np.argsort(classes_mult)[::-1]
+used_indices = set()
+for i in tqdm(start_low_classfreq):
+    class_vector = output_preds[:, i]
+    max_index = np.argsort(class_vector)[::-1]
+
+    num_counter = 0
+    for index in max_index:
+        if num_counter < 10:
+            if index not in used_indices:
+                try:
+                    csv_str_list.append(f"{prediction_ids[index]},{classes_dictionary[i]}")
+                except IndexError:
+                    # print(i, index)
+                    pass
+                used_indices.add(index)
+                num_counter += 1
+            else:
+                continue
+        else:
+            break
 
 csv_str_list.sort()
 csv_preds = "\n".join(csv_str_list)
 csv_string += csv_preds
 
-output = open("outputs/eb3-7-squished-bottleneck-10.txt", 'w')
+output = open("outputs/eb3-7-squished-bottleneck-10-cf-10c.txt", 'w')
 output.write(csv_string)
 output.close()
 
 # for file_name in tqdm(image_fp):
-#     img = image.load_img(file_name, target_size=(340, 500))
+#     img = image.load_img(file_name, target_size=(320, 320))
 #     x = image.img_to_array(img)
 #     x = efn.preprocess_input(x)
 #     imgs.append(x)
