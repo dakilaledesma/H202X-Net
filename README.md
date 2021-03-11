@@ -6,5 +6,5 @@ Current Kaggle competition accuracy:
 
 Private Score | Public Score
 |---|---|
-0.44662 (44.66% accuracy) | 0.47890 (47.89% accuracy)
-17th out of 154 on closed leaderboard| 18th out of 154 on closed leaderboard
+0.48730 (48.73% accuracy) | 0.51454 (51.45% accuracy)
+13th out of 154 on closed leaderboard | 15th out of 154 on closed leaderboard
