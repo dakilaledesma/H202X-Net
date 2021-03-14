@@ -1,4 +1,4 @@
-results = open("topk_ids.csv")
+results = open("submission_files/topk_ids.csv")
 result_lines = results.readlines()
 
 out_lines = ["Id,Predicted"]
@@ -10,6 +10,6 @@ for line in result_lines:
 
 out_lines = '\n'.join(out_lines)
 
-out_file = open("out.csv", 'w')
+out_file = open("submission_files/out8.csv", 'w')
 out_file.write(out_lines)
 out_file.close()
