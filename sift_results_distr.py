@@ -1,5 +1,36 @@
+from glob import glob
+import pandas as pd
+import codecs, json
 import random
-from tqdm import tqdm
+import numpy as np
+
+train_path = "data/h2021/train"
+with codecs.open(f"{train_path}/metadata.json", 'r', encoding='utf-8', errors='ignore') as f:
+    metadata_json = json.load(f)
+
+train_df = pd.DataFrame(metadata_json['annotations'], dtype=str)
+categories = train_df["category_id"]
+categories_dict = {int(t): 0 for t in train_df["category_id"]}
+totals = 0
+for category in categories:
+    if categories_dict[int(category)] != 10:
+        categories_dict[int(category)] += 1
+    totals += 1
+
+num_images = len(glob("data/test/images/*.jpg"))
+print(num_images, totals)
+coeff = 0.5
+
+categories_dict = dict(sorted(categories_dict.items()))
+# print(sum(list(categories_dict.values())))
+categories_val = list(categories_dict.values())
+# print(min(categories_dict.values()), max(categories_dict.values()))
+num_scale = np.interp(categories_val, (min(categories_val), max(categories_val)), (1, 10))
+
+categories_dict = {i: round(num_scale[i]) for i in range(64500)}
+print(sum(list(categories_dict.values())), min(categories_dict.values()))
+
+
 
 results = open("submission_files/topk_ids.csv")
 result_lines = results.readlines()
@@ -25,7 +56,7 @@ while True:
         top_k = [int(x) for x in vals[1:]]
 
         for i in top_k:
-            if out_dict[i] < 10:
+            if out_dict[i] < categories_dict[i]:
                 out_dict[i] += 1
                 out_lines.append(f"{vals[0]},{i}")
                 break
@@ -45,10 +76,11 @@ while True:
         break
 
     rand_seed += 1
+    break
 
 
 print(best_numclasses)
 out_lines = '\n'.join(best_outlines)
-out_file = open("submission_files/out11_naive_postpro.csv", 'w')
+out_file = open("submission_files/out11-l-icf-distr.csv", 'w')
 out_file.write(out_lines)
 out_file.close()

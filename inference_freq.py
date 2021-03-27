@@ -15,6 +15,7 @@ import torch
 from timm.models import create_model, apply_test_time_pool
 from timm.data import ImageDataset, create_loader, resolve_data_config
 from timm.utils import AverageMeter, setup_default_logging
+from sklearn.preprocessing import MinMaxScaler
 
 torch.backends.cudnn.benchmark = True
 _logger = logging.getLogger('inference')
@@ -58,6 +59,8 @@ parser.add_argument('--topk', default=5, type=int,
 
 
 def main():
+    inv_freq = np.load('inverse_cf.npy')
+
     setup_default_logging()
     args = parser.parse_args()
     # might as well try to do something useful...
@@ -103,11 +106,23 @@ def main():
         for batch_idx, (input, _) in enumerate(loader):
             input = input.cuda()
             labels = model(input)
+            labels_np = labels.cpu().numpy()
+
+            out_labels = []
+            for label in labels_np:
+                label = np.reshape(label, (-1, 1))
+                scaler = MinMaxScaler()
+                scaler.fit(label)
+                label = scaler.transform(label)
+                label = np.reshape(label, (-1))
+                label = np.multiply(label, inv_freq)
+                out_labels.append((-label).argsort()[:5])
+
+            out_labels = np.array(out_labels)
             # print(np.amax(labels.cpu().numpy()[0]))
             # print(np.mean(labels.cpu().numpy()[0]), np.std(labels.cpu().numpy()[0]))
             # print(type(labels))
-            topk = labels.topk(k)[1]
-            topk_ids.append(topk.cpu().numpy())
+            topk_ids.append(out_labels)
             # print(np.argmax(labels.cpu().numpy()[0]), topk.cpu().numpy()[0])
 
             # measure elapsed time
