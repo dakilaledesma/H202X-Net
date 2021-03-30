@@ -3,3 +3,4 @@ data/
 submission_files/
 .idea/
 test/
+timm/__pycache__/
