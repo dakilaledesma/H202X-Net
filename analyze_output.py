@@ -7,7 +7,7 @@ categories = set()
 for line in output_lines:
     line = line.strip().split(',')
     vals = [int(v) for v in line[1:]]
-    print(vals)
+    # print(vals)
     
     for v in vals:
         categories.add(v)

@@ -33,7 +33,7 @@ from timm.models import create_model, safe_model_name, resume_checkpoint, load_c
     convert_splitbn_model, model_parameters
 from timm.utils import *
 from timm.loss import LabelSmoothingCrossEntropy, SoftTargetCrossEntropy, JsdCrossEntropy
-from timm.optim import create_optimizer
+from timm.optim import create_optimizer_v2, optimizer_kwargs
 from timm.scheduler import create_scheduler
 from timm.utils import ApexScaler, NativeScaler
 
@@ -51,6 +51,12 @@ try:
         has_native_amp = True
 except AttributeError:
     pass
+
+try:
+    import wandb
+    has_wandb = True
+except ImportError: 
+    has_wandb = False
 
 torch.backends.cudnn.benchmark = True
 _logger = logging.getLogger('train')
@@ -142,6 +148,8 @@ parser.add_argument('--min-lr', type=float, default=1e-5, metavar='LR',
                     help='lower lr bound for cyclic schedulers that hit 0 (1e-5)')
 parser.add_argument('--epochs', type=int, default=200, metavar='N',
                     help='number of epochs to train (default: 2)')
+parser.add_argument('--epoch-repeats', type=float, default=0., metavar='N',
+                    help='epoch repeat multiplier (number of times to repeat dataset epoch per train epoch).')
 parser.add_argument('--start-epoch', default=None, type=int, metavar='N',
                     help='manual epoch number (useful on restarts)')
 parser.add_argument('--decay-epochs', type=float, default=30, metavar='N',
@@ -258,6 +266,8 @@ parser.add_argument('--no-prefetcher', action='store_true', default=False,
                     help='disable fast prefetcher')
 parser.add_argument('--output', default='', type=str, metavar='PATH',
                     help='path to output folder (default: none, current dir)')
+parser.add_argument('--experiment', default='', type=str, metavar='NAME',
+                    help='name of train experiment, name of sub-folder for output')
 parser.add_argument('--eval-metric', default='top1', type=str, metavar='EVAL_METRIC',
                     help='Best metric (default: "top1"')
 parser.add_argument('--tta', type=int, default=0, metavar='N',
@@ -267,6 +277,8 @@ parser.add_argument('--use-multi-epochs-loader', action='store_true', default=Fa
                     help='use the multi-epochs-loader to save time at the beginning of every epoch')
 parser.add_argument('--torchscript', dest='torchscript', action='store_true',
                     help='convert model torchscript for inference')
+parser.add_argument('--log-wandb', action='store_true', default=False,
+                    help='log training and validation metrics to wandb')
 
 
 def _parse_args():
@@ -289,7 +301,14 @@ def _parse_args():
 def main():
     setup_default_logging()
     args, args_text = _parse_args()
-
+    
+    if args.log_wandb:
+        if has_wandb:
+            wandb.init(project=args.experiment, config=args)
+        else: 
+            _logger.warning("You've requested to log metrics to wandb but package not found. "
+                            "Metrics not being logged to wandb, try `pip install wandb`")
+             
     args.prefetcher = not args.no_prefetcher
     args.distributed = False
     if 'WORLD_SIZE' in os.environ:
@@ -325,7 +344,7 @@ def main():
         _logger.warning("Neither APEX or native Torch AMP is available, using float32. "
                         "Install NVIDA apex or upgrade to PyTorch 1.6")
 
-    torch.manual_seed(args.seed + args.rank)
+    random_seed(args.seed, args.rank)
 
     model = create_model(
         args.model,
@@ -385,7 +404,7 @@ def main():
         assert not args.sync_bn, 'Cannot use SyncBatchNorm with torchscripted model'
         model = torch.jit.script(model)
 
-    optimizer = create_optimizer(args, model)
+    optimizer = create_optimizer_v2(model, **optimizer_kwargs(cfg=args))
 
     # setup automatic mixed-precision (AMP) loss scaling and op casting
     amp_autocast = suppress  # do nothing
@@ -451,7 +470,9 @@ def main():
 
     # create the train and eval datasets
     dataset_train = create_dataset(
-        args.dataset, root=args.data_dir, split=args.train_split, is_training=True, batch_size=args.batch_size)
+        args.dataset,
+        root=args.data_dir, split=args.train_split, is_training=True,
+        batch_size=args.batch_size, repeats=args.epoch_repeats)
     dataset_eval = create_dataset(
         args.dataset, root=args.data_dir, split=args.val_split, is_training=False, batch_size=args.batch_size)
 
@@ -539,15 +560,17 @@ def main():
     best_metric = None
     best_epoch = None
     saver = None
-    output_dir = ''
+    output_dir = None
     if args.local_rank == 0:
-        output_base = args.output if args.output else './output'
-        exp_name = '-'.join([
-            datetime.now().strftime("%Y%m%d-%H%M%S"),
-            safe_model_name(args.model),
-            str(data_config['input_size'][-1])
-        ])
-        output_dir = get_outdir(output_base, 'train', exp_name)
+        if args.experiment:
+            exp_name = args.experiment
+        else:
+            exp_name = '-'.join([
+                datetime.now().strftime("%Y%m%d-%H%M%S"),
+                safe_model_name(args.model),
+                str(data_config['input_size'][-1])
+            ])
+        output_dir = get_outdir(args.output if args.output else './output/train', exp_name)
         decreasing = True if eval_metric == 'loss' else False
         saver = CheckpointSaver(
             model=model, optimizer=optimizer, args=args, model_ema=model_ema, amp_scaler=loss_scaler,
@@ -583,9 +606,10 @@ def main():
                 # step LR for next epoch
                 lr_scheduler.step(epoch + 1, eval_metrics[eval_metric])
 
-            update_summary(
-                epoch, train_metrics, eval_metrics, os.path.join(output_dir, 'summary.csv'),
-                write_header=best_metric is None)
+            if output_dir is not None:
+                update_summary(
+                    epoch, train_metrics, eval_metrics, os.path.join(output_dir, 'summary.csv'),
+                    write_header=best_metric is None, log_wandb=args.log_wandb and has_wandb)
 
             if saver is not None:
                 # save proper checkpoint with eval metric
@@ -600,7 +624,7 @@ def main():
 
 def train_one_epoch(
         epoch, model, loader, optimizer, loss_fn, args,
-        lr_scheduler=None, saver=None, output_dir='', amp_autocast=suppress,
+        lr_scheduler=None, saver=None, output_dir=None, amp_autocast=suppress,
         loss_scaler=None, model_ema=None, mixup_fn=None):
 
     if args.mixup_off_epoch and epoch >= args.mixup_off_epoch:

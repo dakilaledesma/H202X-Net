@@ -6,9 +6,9 @@ import codecs
 from glob import glob
 from tqdm import tqdm
 
-restructure_path = "data/h2021/restructured/train/images"
+restructure_path = "E:/h2021/restructured/train/images"
 
-train_path = "data/h2021/train"
+train_path = "E:/h2021/train"
 with codecs.open(f"{train_path}/metadata.json", 'r', encoding='utf-8', errors='ignore') as f:
     metadata_json = json.load(f)
 
@@ -18,7 +18,7 @@ image_categories = dict(zip(train_df["image_id"], train_df["category_id"]))
 
 categories = set(image_categories.values())
 for category in tqdm(categories, desc="Creating folders"):
-    os.mkdir(f"{restructure_path}/{category}")
+    os.makedirs(f"{restructure_path}/{category}")
 
 image_filepaths = glob(f"{train_path}/**/*.jpg", recursive=True)
 for filepath in tqdm(image_filepaths, desc="Moving images"):

@@ -10,6 +10,6 @@ for line in result_lines:
 
 out_lines = '\n'.join(out_lines)
 
-out_file = open("submission_files/out3bw.csv", 'w')
+out_file = open("submission_files/out3_eb6_icf.csv", 'w')
 out_file.write(out_lines)
 out_file.close()

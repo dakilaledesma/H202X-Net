@@ -274,7 +274,9 @@ class ResNetStage(nn.Module):
         return x
 
 
-def create_stem(in_chs, out_chs, stem_type='', preact=True, conv_layer=None, norm_layer=None):
+def create_resnetv2_stem(
+        in_chs, out_chs=64, stem_type='', preact=True,
+        conv_layer=StdConv2d, norm_layer=partial(GroupNormAct, num_groups=32)):
     stem = OrderedDict()
     assert stem_type in ('', 'fixed', 'same', 'deep', 'deep_fixed', 'deep_same')
 
@@ -322,7 +324,8 @@ class ResNetV2(nn.Module):
 
         self.feature_info = []
         stem_chs = make_div(stem_chs * wf)
-        self.stem = create_stem(in_chans, stem_chs, stem_type, preact, conv_layer=conv_layer, norm_layer=norm_layer)
+        self.stem = create_resnetv2_stem(
+            in_chans, stem_chs, stem_type, preact, conv_layer=conv_layer, norm_layer=norm_layer)
         stem_feat = ('stem.conv3' if 'deep' in stem_type else 'stem.conv') if preact else 'stem.norm'
         self.feature_info.append(dict(num_chs=stem_chs, reduction=2, module=stem_feat))
 
@@ -362,6 +365,7 @@ class ResNetV2(nn.Module):
         return self.head.fc
 
     def reset_classifier(self, num_classes, global_pool='avg'):
+        self.num_classes = num_classes
         self.head = ClassifierHead(
             self.num_features, num_classes, pool_type=global_pool, drop_rate=self.drop_rate, use_conv=True)
 
@@ -390,8 +394,9 @@ class ResNetV2(nn.Module):
                 self.stem.conv.weight.copy_(stem_conv_w)
             self.norm.weight.copy_(tf2th(weights[f'{prefix}group_norm/gamma']))
             self.norm.bias.copy_(tf2th(weights[f'{prefix}group_norm/beta']))
-            self.head.fc.weight.copy_(tf2th(weights[f'{prefix}head/conv2d/kernel']))
-            self.head.fc.bias.copy_(tf2th(weights[f'{prefix}head/conv2d/bias']))
+            if self.head.fc.weight.shape[0] == weights[f'{prefix}head/conv2d/kernel'].shape[-1]:
+                self.head.fc.weight.copy_(tf2th(weights[f'{prefix}head/conv2d/kernel']))
+                self.head.fc.bias.copy_(tf2th(weights[f'{prefix}head/conv2d/bias']))
             for i, (sname, stage) in enumerate(self.stages.named_children()):
                 for j, (bname, block) in enumerate(stage.blocks.named_children()):
                     convname = 'standardized_conv2d'

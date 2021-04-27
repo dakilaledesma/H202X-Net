@@ -1,5 +1,5 @@
 import timm
 from pprint import pprint
-model_names = timm.list_models(pretrained=True)
+model_names = timm.list_models()
 
-print(model_names)
+print('\n'.join(model_names))

@@ -15,7 +15,7 @@ for family, category in zip(categories_df["family"], categories_df["id"]):
     family_dict[family].add(category)
 
 
-print(list(family_dict.items())[:5])
+print(len(list(family_dict.items())))
 
 train_df = pd.DataFrame(metadata_json['annotations'], dtype=str)
 print(train_df.columns)

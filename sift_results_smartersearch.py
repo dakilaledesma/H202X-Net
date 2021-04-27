@@ -59,8 +59,6 @@ for i, val in tqdm(enumerate(list(ids.values()))):
             arr = topks[:, j]
             columnk_results = np.where(arr == i)[0]
             if len(columnk_results) == 1:
-                # print(i, j, columnk_results)
-                # print(len(columnk_results))
                 for columnk in columnk_results:
                     if ids[final_im_to_id[columnk]] > 1:
                         final_im_to_id[columnk] = i
@@ -74,6 +72,6 @@ for k, v in final_im_to_id.items():
     out_lines.append(f"{k},{v}")
 
 out_lines = '\n'.join(out_lines)
-out_file = open("submission_files/out23_spp4.csv", 'w')
+out_file = open("submission_files/out23_srxaug30_b.csv", 'w')
 out_file.write(out_lines)
 out_file.close()

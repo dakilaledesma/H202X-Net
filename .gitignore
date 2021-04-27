@@ -4,3 +4,6 @@ submission_files/
 .idea/
 test/
 timm/__pycache__/
+inat2021/
+npzs/
+*.pyc
