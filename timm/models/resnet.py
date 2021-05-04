@@ -591,7 +591,8 @@ class ResNet(nn.Module):
 
         # Head (Pooling and Classifier)
         self.num_features = 512 * block.expansion
-        self.global_pool, self.fc = create_classifier(self.num_features, self.num_classes, pool_type=global_pool)
+        self.global_pool, self.fc = create_classifier(512, self.num_classes, pool_type=global_pool)
+        self.bottleneck = nn.Linear(self.num_features, 512)
 
         for n, m in self.named_modules():
             if isinstance(m, nn.Conv2d):
@@ -628,6 +629,7 @@ class ResNet(nn.Module):
         x = self.global_pool(x)
         if self.drop_rate:
             x = F.dropout(x, p=float(self.drop_rate), training=self.training)
+        x = self.bottleneck(x)
         x = self.fc(x)
         return x
 
