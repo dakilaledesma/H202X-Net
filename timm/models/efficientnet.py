@@ -364,7 +364,8 @@ class EfficientNet(nn.Module):
         self.bn2 = norm_layer(self.num_features, **norm_kwargs)
         self.act2 = act_layer(inplace=True)
         self.global_pool, self.classifier = create_classifier(
-            self.num_features, self.num_classes, pool_type=global_pool)
+            512, self.num_classes, pool_type=global_pool)
+        self.bottleneck = nn.Linear(self.num_features, 512)
 
         efficientnet_init_weights(self)
 
@@ -398,6 +399,7 @@ class EfficientNet(nn.Module):
         x = self.global_pool(x)
         if self.drop_rate > 0.:
             x = F.dropout(x, p=self.drop_rate, training=self.training)
+        x = self.bottleneck(x)
         return self.classifier(x)
 
 
