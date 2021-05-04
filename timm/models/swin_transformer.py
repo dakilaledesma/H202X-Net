@@ -534,6 +534,7 @@ class SwinTransformer(nn.Module):
 
     def forward(self, x):
         x = self.forward_features(x)
+        x = self.bottleneck(x)
         x = self.head(x)
         return x
 
