@@ -502,8 +502,8 @@ class SwinTransformer(nn.Module):
 
         self.norm = norm_layer(self.num_features)
         self.avgpool = nn.AdaptiveAvgPool1d(1)
-        self.bottleneck = nn.Linear(self.num_features, 1024)
-        self.head = nn.Linear(1024, num_classes) if num_classes > 0 else nn.Identity()
+        self.bottleneck = nn.Linear(num_classes, 32094)
+        self.head = nn.Linear(self.num_features, num_classes) if num_classes > 0 else nn.Identity()
 
         assert weight_init in ('jax', 'jax_nlhb', 'nlhb', '')
         head_bias = -math.log(self.num_classes) if 'nlhb' in weight_init else 0.
@@ -534,8 +534,8 @@ class SwinTransformer(nn.Module):
 
     def forward(self, x):
         x = self.forward_features(x)
-        x = self.bottleneck(x)
         x = self.head(x)
+        x = self.bottleneck(x)
         return x
 
 
