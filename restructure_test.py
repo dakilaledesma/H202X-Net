@@ -3,9 +3,9 @@ import shutil
 from glob import glob
 from tqdm import tqdm
 
-restructure_path = "restructured/test/images"
+restructure_path = "data/h2020/restructured_test"
 
-test_path = "data/nybg2020/test"
+test_path = "data/h2020/test"
 
 image_filepaths = glob(f"{test_path}/**/*.jpg", recursive=True)
 for filepath in tqdm(image_filepaths, desc="Moving images"):
