@@ -59,7 +59,7 @@ parser.add_argument('--topk', default=5, type=int,
 
 
 def main():
-    inv_freq = np.load('inverse_cf.npy')
+    inv_freq = np.load('H2021-Net/inverse_cf.npy')
 
     setup_default_logging()
     args = parser.parse_args()
