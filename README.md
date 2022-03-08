@@ -1,6 +1,7 @@
-# Herbarium 2021 Challenge Dataset Neural Network Try
+# Herbarium 202X Challenge Dataset Neural Network Try
 Undergraduate thesis work to train an identification neural network for herbarium sheet images. Training and testing is done on the Herbarium 2020 & 2021 Challenge Dataset by the New York Botanical Garden. Much work has been done in training state-of-the-art neural networks, such as EfficientNet and SE-ResNeXt-50, using PyTorch and pytorch-image-models. 
 
+### Previous competitions
 Final Kaggle competition accuracy (H2021): 
 
 Private Score | Public Score
