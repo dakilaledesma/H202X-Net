@@ -92,6 +92,8 @@ def main():
         std=config['std'],
         num_workers=args.workers,
         crop_pct=1.0 if test_time_pool else config['crop_pct'])
+    
+    print("Crop percent:", config['crop_pct'])
 
     model.eval()
 
